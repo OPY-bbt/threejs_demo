@@ -12,7 +12,7 @@
 </head>
 <body>
     <script src="https://threejs.org/build/three.js"></script>
-    <script src="./dat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
     <script>
         /***
          *  rewrite prototype method
@@ -184,13 +184,15 @@
 
         var controls = {
             size: size,
-            color: "#00FFBC",
+            frontColor: "#00FFBC",
+            sideColor: '#00FFBB',
             letterSpace: 1,
             lineHeight: 1,
             bevelEnabled: bevelEnabled,
             text: 'tuguaishou',
             opacity: 1,
             depth: textHeight,
+            textureEnabled: false,
         };
 
         function init() {
@@ -233,47 +235,16 @@
 
         function initGUI() {
             var gui = new dat.GUI();
-            var c_mesh_text = gui.add(controls, 'text');
-            var c_mesh_size = gui.add(controls, 'size', 50, 150).step(1);
-            var c_mesh_color = gui.addColor(controls, 'color', 0,100);
-            var c_mesh_letterSpace = gui.add(controls, 'letterSpace', 0.5, 3).step(0.1);
-            var c_mesh_lineHeight = gui.add(controls, 'lineHeight', 0.5, 3).step(0.1);
-            var c_mesh_opacity = gui.add(controls, 'opacity', 0, 1).step(0.1);
-            var c_meth_depth = gui.add(controls, 'depth', 0, 50).step(1);
-            var c_mesh_bevelEnabled = gui.add(controls, 'bevelEnabled');
-
-            c_mesh_text.onChange(function() {
-                refreshText();
-            });
-
-            c_mesh_size.onChange(function(){
-                size = controls.size;
-                refreshText();
-            });
-
-            c_mesh_color.onChange(function(){
-                refreshText();
-            });
-
-            c_mesh_letterSpace.onChange(function() {
-                refreshText();
-            });
-
-            c_mesh_lineHeight.onChange(function() {
-                refreshText();
-            });
-
-            c_mesh_opacity.onChange(function() {
-                refreshText();
-            });
-
-            c_meth_depth.onChange(function() {
-                refreshText();
-            });
-
-            c_mesh_bevelEnabled.onChange(function() {
-                refreshText();
-            });
+            var c_mesh_text = gui.add(controls, 'text').onChange(function() {refreshText();});
+            var c_mesh_size = gui.add(controls, 'size', 50, 150).step(1).onChange(function() {refreshText();});
+            var c_mesh_frontColor = gui.addColor(controls, 'frontColor', 0,100).onChange(function() {refreshText();});
+            var c_mesh_sideColor = gui.addColor(controls, 'sideColor', 0, 100).onChange(function() {refreshText();});
+            var c_mesh_letterSpace = gui.add(controls, 'letterSpace', 0.5, 3).step(0.1).onChange(function() {refreshText();});
+            var c_mesh_lineHeight = gui.add(controls, 'lineHeight', 0.5, 3).step(0.1).onChange(function() {refreshText();});
+            var c_mesh_opacity = gui.add(controls, 'opacity', 0, 1).step(0.1).onChange(function() {refreshText();});
+            var c_meth_depth = gui.add(controls, 'depth', 0, 50).step(1).onChange(function() {refreshText();});
+            var c_mesh_bevelEnabled = gui.add(controls, 'bevelEnabled').onChange(function() {refreshText();});
+            var c_mesh_textureEnabled = gui.add(controls, 'textureEnabled').onChange(function() {refreshText();});
         }
 
         function loadFont() {
@@ -315,10 +286,25 @@
             textGeo.center();
 
             // MATERIAL
-            var color = controls.color.substring(1);
+            var frontColor = controls.frontColor.substring(1);
+            var sideColor = controls.sideColor.substring(1);
+
+            var frontTexture = new THREE.ImageUtils.loadTexture('./lava.jpg');
+            frontTexture.wrapS = frontTexture.wrapT = THREE.RepeatWrapping;
+            frontTexture.repeat.set(0.05, 0.05);
+
             materials = [
-                new THREE.MeshPhongMaterial( { color: parseInt(color, 16), transparent: true } ), // front
-                new THREE.MeshPhongMaterial( { color: parseInt(color, 16), transparent: true } ), // side
+                controls.textureEnabled ? new THREE.MeshPhongMaterial( {
+                    transparent: true,
+                    map: frontTexture,
+                }) : new THREE.MeshPhongMaterial( {
+                    color: parseInt(frontColor, 16),
+                    transparent: true,
+                }), // front
+                new THREE.MeshPhongMaterial( {
+                    color: parseInt(sideColor, 16),
+                    transparent: true,
+                }), // side
             ];
             materials.forEach(function(v) { v.opacity = controls.opacity; });
 
