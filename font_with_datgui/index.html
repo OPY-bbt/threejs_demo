@@ -160,12 +160,14 @@
 
             bevelThickness = 2,
             bevelSize = 1.5,
+            bevelOffset = 0,
+            bevelSegments = 3,
             bevelEnabled = true,
 
             curveSegments = 4,
 
             textHeight = 10,
-            size = 80;
+            size = 120;
 
         var targetRotation = 0;
         var targetRotationOnMouseDown = 0;
@@ -184,15 +186,41 @@
 
         var controls = {
             size: size,
-            frontColor: "#00FFBC",
-            sideColor: '#00FFBB',
+            frontColor: "#FFFFFF",
+            sideColor: '#FFFFFF',
             letterSpace: 1,
             lineHeight: 1,
+
             bevelEnabled: bevelEnabled,
+            bevelOffset: bevelOffset,
+            bevelSegments: bevelSegments,
+
             text: 'tuguaishou',
-            opacity: 1,
+            // opacity: 1,
             depth: textHeight,
-            textureEnabled: false,
+
+            // material-front
+            frontTextureEnabled: false,
+            frontOpacity: 1,
+
+            // material-side
+            sideTextureEnabled: false,
+            sideOpacity: 1,
+
+            // light
+            directional_light_enabled: true,
+            directional_light_color: 0xffffff,
+            directional_light_intensity: 0.125,
+            directional_light_x: 0,
+            directional_light_y: 0,
+            directional_light_z: 1,
+
+            point_light_enabled: true,
+            point_light_color: 0xffffff,
+            point_light_intensity: 1.5,
+            point_light_x: 0,
+            point_light_y: 100,
+            point_light_z: 90,
         };
 
         function init() {
@@ -207,12 +235,12 @@
             scene.fog = new THREE.Fog( 0x000000, 250, 1400 );
 
             // LIGHTS
-            var dirLight = new THREE.DirectionalLight( 0xffffff, 0.125 );
-            dirLight.position.set( 0, 0, 1 ).normalize();
+            var dirLight = new THREE.DirectionalLight( controls.directional_light_color, controls.directional_light_intensity );
+            dirLight.position.set( controls.directional_light_x, controls.directional_light_y, controls.directional_light_z ).normalize();
             scene.add( dirLight );
 
-            var pointLight = new THREE.PointLight( 0xffffff, 1.5 );
-            pointLight.position.set( 0, 100, 90 );
+            var pointLight = new THREE.PointLight( controls.point_light_color, controls.point_light_intensity );
+            pointLight.position.set( controls.point_light_x, controls.point_light_y, controls.point_light_z );
             scene.add( pointLight );
 
             // GROUP
@@ -234,17 +262,71 @@
         }
 
         function initGUI() {
-            var gui = new dat.GUI();
-            var c_mesh_text = gui.add(controls, 'text').onChange(function() {refreshText();});
-            var c_mesh_size = gui.add(controls, 'size', 50, 150).step(1).onChange(function() {refreshText();});
-            var c_mesh_frontColor = gui.addColor(controls, 'frontColor', 0,100).onChange(function() {refreshText();});
-            var c_mesh_sideColor = gui.addColor(controls, 'sideColor', 0, 100).onChange(function() {refreshText();});
-            var c_mesh_letterSpace = gui.add(controls, 'letterSpace', 0.5, 3).step(0.1).onChange(function() {refreshText();});
-            var c_mesh_lineHeight = gui.add(controls, 'lineHeight', 0.5, 3).step(0.1).onChange(function() {refreshText();});
-            var c_mesh_opacity = gui.add(controls, 'opacity', 0, 1).step(0.1).onChange(function() {refreshText();});
-            var c_meth_depth = gui.add(controls, 'depth', 0, 50).step(1).onChange(function() {refreshText();});
-            var c_mesh_bevelEnabled = gui.add(controls, 'bevelEnabled').onChange(function() {refreshText();});
-            var c_mesh_textureEnabled = gui.add(controls, 'textureEnabled').onChange(function() {refreshText();});
+            var gui = new dat.GUI({width: 300});
+            var c_mesh_text = gui.add(controls, 'text').onChange(refreshText);
+            var c_mesh_size = gui.add(controls, 'size', 50, 150).step(1).onChange(refreshText);
+            var c_mesh_letterSpace = gui.add(controls, 'letterSpace', 0.5, 3).step(0.1).onChange(refreshText);
+            var c_mesh_lineHeight = gui.add(controls, 'lineHeight', 0.5, 3).step(0.1).onChange(refreshText);
+            var c_meth_depth = gui.add(controls, 'depth', 0, 50).step(1).onChange(refreshText);
+            var c_mesh_bevelEnabled = gui.add(controls, 'bevelEnabled').onChange(refreshText);
+
+            // LIGHT CONFIG
+            var directional_light_folder = gui.addFolder('directional_light(平行光)');
+            var directional_light = scene.children[0];
+            directional_light_folder.add(controls, 'directional_light_enabled').onChange(function(v) {
+                directional_light.visible = v;
+            });
+            directional_light_folder.addColor(controls, 'directional_light_color', 0,100).onChange(function(v) {
+                directional_light.color.setHex( v );
+            });
+            directional_light_folder.add(controls, 'directional_light_x').step(1).onChange(function(v) {
+                directional_light.position.setX(v);
+            });
+            directional_light_folder.add(controls, 'directional_light_y').step(1).onChange(function(v) {
+                directional_light.position.setY(v);
+            });
+            directional_light_folder.add(controls, 'directional_light_z').step(1).onChange(function(v) {
+                directional_light.position.setZ(v);
+            });
+            directional_light_folder.add(controls, 'directional_light_intensity').onChange(function(v) {
+                directional_light.intensity = v;
+            });
+            // directional_light_folder.open();
+
+            var point_light_folder = gui.addFolder('point_light(点光源)');
+            var point_light = scene.children[1];
+            point_light_folder.add(controls, 'point_light_enabled').onChange(function(v) {
+                point_light.visible = v;
+            });
+            point_light_folder.addColor(controls, 'point_light_color', 0,100).onChange(function(v) {
+                point_light.color.setHex( v );
+            });
+            point_light_folder.add(controls, 'point_light_x').step(1).onChange(function(v) {
+                point_light.position.setX(v);
+            });
+            point_light_folder.add(controls, 'point_light_y').step(1).onChange(function(v) {
+                point_light.position.setY(v);
+            });
+            point_light_folder.add(controls, 'point_light_z').step(1).onChange(function(v) {
+                point_light.position.setZ(v);
+            });
+            point_light_folder.add(controls, 'point_light_intensity').onChange(function(v) {
+                point_light.intensity = v;
+            });
+            // point_light_folder.open();
+
+             // MATERIAL CONFIG
+            var front_material_folder = gui.addFolder('front_material(控制文字正面颜色)');
+            front_material_folder.addColor(controls, 'frontColor', 0,100).onChange(refreshText);
+            front_material_folder.add(controls, 'frontTextureEnabled').onChange(refreshText);
+            front_material_folder.add(controls, 'frontOpacity', 0, 1).step(0.1).onChange(refreshText);
+            // front_material_folder.open();
+
+            var side_material_folder = gui.addFolder('side_matertial(控制文字侧面颜色)');
+            side_material_folder.addColor(controls, 'sideColor', 0, 100).onChange(refreshText);
+            side_material_folder.add(controls, 'sideTextureEnabled').onChange(refreshText);
+            side_material_folder.add(controls, 'sideOpacity', 0, 1).step(0.1).onChange(refreshText);
+            // side_material_folder.open();
         }
 
         function loadFont() {
@@ -272,6 +354,8 @@
                 bevelThickness: bevelThickness,
                 bevelSize: bevelSize,
                 bevelEnabled: controls.bevelEnabled,
+                bevelOffset: controls.bevelOffset,
+                bevelSegments: controls.bevelSegments,
 
                 curveSegments: curveSegments,
             });
@@ -289,24 +373,28 @@
             var frontColor = controls.frontColor.substring(1);
             var sideColor = controls.sideColor.substring(1);
 
-            var frontTexture = new THREE.ImageUtils.loadTexture('./lava.jpg');
+            var frontTexture = new THREE.TextureLoader().load('./lava.jpg');
             frontTexture.wrapS = frontTexture.wrapT = THREE.RepeatWrapping;
             frontTexture.repeat.set(0.05, 0.05);
 
             materials = [
-                controls.textureEnabled ? new THREE.MeshPhongMaterial( {
+                controls.frontTextureEnabled ? new THREE.MeshPhongMaterial( {
                     transparent: true,
                     map: frontTexture,
                 }) : new THREE.MeshPhongMaterial( {
                     color: parseInt(frontColor, 16),
                     transparent: true,
                 }), // front
-                new THREE.MeshPhongMaterial( {
+                controls.sideTextureEnabled ? new THREE.MeshPhongMaterial( {
+                    transparent: true,
+                    map: frontTexture,
+                }) : new THREE.MeshPhongMaterial( {
                     color: parseInt(sideColor, 16),
                     transparent: true,
                 }), // side
             ];
-            materials.forEach(function(v) { v.opacity = controls.opacity; });
+            materials[0].opacity = controls.frontOpacity;
+            materials[1].opacity = controls.sideOpacity
 
             textMesh = new THREE.Mesh( textGeo, materials );
 
