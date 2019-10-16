@@ -184,6 +184,8 @@
         var windowHalfX = width / 2;
         var windowHalfY = height / 2;
 
+        var font_path = 'alifont.json';
+
         var controls = {
             size: size,
             frontColor: "#FFFFFF",
@@ -195,7 +197,7 @@
             bevelOffset: bevelOffset,
             bevelSegments: bevelSegments,
 
-            text: 'tuguaishou',
+            text: '图怪兽',
             // opacity: 1,
             depth: textHeight,
 
@@ -331,7 +333,7 @@
 
         function loadFont() {
             var loader = new THREE.FontLoader();
-            loader.load( 'font.json', function ( response ) {
+            loader.load( font_path, function ( response ) {
                 font = response;
                 refreshText();
             });
