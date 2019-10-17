@@ -11,6 +11,8 @@
     </style>
 </head>
 <body>
+    <script src="opentype.min.js"></script>
+    <script src="ttf2json.js"></script>
     <script src="https://threejs.org/build/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
     <script>
@@ -56,8 +58,7 @@
                     offsetY -= line_height;
 
                 } else {
-
-                    var ret = createPath( char, scale, offsetX, offsetY, data );
+                    var ret = createPath( char, scale, offsetX, offsetY, char.charCodeAt(0) < 255 ? polyfill_font.data : data );
                     offsetX += ret.offsetX;
                     paths.push( ret.path );
 
@@ -184,7 +185,39 @@
         var windowHalfX = width / 2;
         var windowHalfY = height / 2;
 
-        var font_path = 'alifont.json';
+        var polyfill_font;
+
+        var font_urls = [
+            {
+                url: 'alifont.json',
+                label: '只有图怪兽三个字',
+                type: 'json',
+            }, {
+                url: 'font.json',
+                label: '只有英文',
+                type: 'json',
+            }, {
+                url: 'fnsyhtLight.ttf',
+                label: '思源',
+                type: 'ttf',
+            }, {
+                url: 'zh27hbdt.ttf',
+                label: '字魂布丁体',
+                type: 'ttf',
+            }, {
+                url: 'zh.ttf',
+                label: '字魂',
+                type: 'ttf',
+            }, {
+                url: 'https://js.tuguaishou.com/fonts/fnsystSCHeavy.woff?t=1555041828',
+                label: "思源宋体",
+                type: 'woff',
+            }, {
+                url: 'https://js.tuguaishou.com/fonts/zh35hsxheht.woff?t=1555041828',
+                label: "字魂35号经典雅黑",
+                type: 'woff',
+            }
+        ];
 
         var controls = {
             size: size,
@@ -197,8 +230,8 @@
             bevelOffset: bevelOffset,
             bevelSegments: bevelSegments,
 
-            text: '图怪兽',
-            // opacity: 1,
+            text: '图怪兽3D文字DEMO',
+            fontFamily: '字魂布丁体',
             depth: textHeight,
 
             // material-front
@@ -250,7 +283,7 @@
             group.position.y = 0;
             scene.add( group );
 
-            loadFont();
+            loadFontNormalFont();
 
             // RENDERER
             renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -265,10 +298,11 @@
 
         function initGUI() {
             var gui = new dat.GUI({width: 300});
-            var c_mesh_text = gui.add(controls, 'text').onChange(refreshText);
+            var c_mesh_text = gui.add(controls, 'text').onChange(loadFont);
             var c_mesh_size = gui.add(controls, 'size', 50, 150).step(1).onChange(refreshText);
             var c_mesh_letterSpace = gui.add(controls, 'letterSpace', 0.5, 3).step(0.1).onChange(refreshText);
             var c_mesh_lineHeight = gui.add(controls, 'lineHeight', 0.5, 3).step(0.1).onChange(refreshText);
+            var c_mesh_fontFamily = gui.add(controls, 'fontFamily', font_urls.map(v => v.label)).onChange(loadFont);
             var c_meth_depth = gui.add(controls, 'depth', 0, 50).step(1).onChange(refreshText);
             var c_mesh_bevelEnabled = gui.add(controls, 'bevelEnabled').onChange(refreshText);
 
@@ -331,12 +365,53 @@
             // side_material_folder.open();
         }
 
+        function loadFontNormalFont() {
+            var loader = new THREE.FontLoader();
+            loader.load( 'font.json', function ( response ) {
+                polyfill_font = response;
+
+                loadFont();
+            });
+        }
+
         function loadFont() {
             var loader = new THREE.FontLoader();
-            loader.load( font_path, function ( response ) {
-                font = response;
-                refreshText();
-            });
+            var targetFont = font_urls.find(v => v.label === controls.fontFamily);
+
+            switch(targetFont.type) {
+                case 'json': {
+                    loader.load( targetFont.url, function ( response ) {
+                        font = response;
+                        refreshText();
+                    });
+                    break;
+                }
+                case 'ttf': {
+                    function applyFont() {
+                        var json = convert(targetFont.parsedBuffer, controls.text + '?');
+                        font = loader.parse(JSON.parse(json));
+                        refreshText();
+                    }
+
+                    if (targetFont.parsedBuffer) {
+                        applyFont();
+                    } else {
+                        fetch(targetFont.url)
+                            .then(function(response) {
+                                return response.arrayBuffer();
+                            })
+                            .then(function(buffer) {
+                                targetFont.parsedBuffer = opentype.parse(buffer);
+                                applyFont();
+                            });
+                    }
+                    break;
+                }
+                case 'woff': {
+                    alert('暂时还不支持');
+                    break;
+                }
+            }
         }
 
         function refreshText() {
