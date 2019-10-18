@@ -411,7 +411,9 @@
                                 console.time("parse font");
                                 targetFont.parsedBuffer = opentype.parse(buffer);
                                 console.timeEnd("parse font");
-                                applyFont();
+                                if(targetFont.parsedBuffer.supported) {
+                                    applyFont();
+                                }
                             });
                     }
                     break;
