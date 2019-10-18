@@ -11,7 +11,7 @@
     </style>
 </head>
 <body>
-    <script src="opentype.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
     <script src="ttf2json.js"></script>
     <script src="https://threejs.org/build/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
@@ -209,6 +209,10 @@
                 label: '字魂',
                 type: 'ttf',
             }, {
+                url: './aliph.woff',
+                label: '阿里普惠字体DEMO文字',
+                type: 'woff',
+            }, {
                 url: 'https://js.tuguaishou.com/fonts/fnsystSCHeavy.woff?t=1555041828',
                 label: "思源宋体",
                 type: 'woff',
@@ -386,9 +390,12 @@
                     });
                     break;
                 }
+                case 'woff':
                 case 'ttf': {
                     function applyFont() {
+                        console.time("convert font");
                         var json = convert(targetFont.parsedBuffer, controls.text + '?');
+                        console.timeEnd("convert font");
                         font = loader.parse(JSON.parse(json));
                         refreshText();
                     }
@@ -401,14 +408,12 @@
                                 return response.arrayBuffer();
                             })
                             .then(function(buffer) {
+                                console.time("parse font");
                                 targetFont.parsedBuffer = opentype.parse(buffer);
+                                console.timeEnd("parse font");
                                 applyFont();
                             });
                     }
-                    break;
-                }
-                case 'woff': {
-                    alert('暂时还不支持');
                     break;
                 }
             }

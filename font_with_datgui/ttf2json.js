@@ -27,8 +27,9 @@ var convert = function(font, text){
             restriction.set = restrictContent;
         }
     }
+    for (var i = 0, len = font.glyphs.length; i < len; i++) {
+        var glyph = font.glyphs.glyphs[i];
 
-    font.glyphs.forEach(function(glyph){
         if (glyph.unicode !== undefined) {
             var glyphCharacter = String.fromCharCode (glyph.unicode);
             var needToExport = true;
@@ -71,7 +72,8 @@ var convert = function(font, text){
                 result.glyphs[String.fromCharCode(glyph.unicode)] = token;
             }
         };
-    });
+    }
+
     result.familyName = font.familyName;
     result.ascender = Math.round(font.ascender * scale);
     result.descender = Math.round(font.descender * scale);
@@ -84,14 +86,15 @@ var convert = function(font, text){
     "xMax": Math.round(font.tables.head.xMax * scale)
     };
     result.resolution = 1000;
-    result.original_font_information = font.tables.name;
-    if (font.styleName.toLowerCase().indexOf("bold") > -1){
+    result.original_font_information = font.names;
+
+    if (font.names.fontSubfamily.en.toLowerCase().indexOf("bold") > -1){
         result.cssFontWeight = "bold";
     } else {
         result.cssFontWeight = "normal";
     };
 
-    if (font.styleName.toLowerCase().indexOf("italic") > -1){
+    if (font.names.fontSubfamily.en.toLowerCase().indexOf("italic") > -1){
         result.cssFontStyle = "italic";
     } else {
         result.cssFontStyle = "normal";
