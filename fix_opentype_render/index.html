@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <canvas id="canvas" width="1000" height="1000"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
+    <script>
+        var fontUrl = 'https://st0.dancf.com/csc/1/fonts/227/20180417-014250-11.woff';
+        var canvas = document.body.querySelector('#canvas');
+        var ctx = canvas.getContext('2d');
+        var commands = '[{"type":"M","x":274,"y":149},{"type":"C","x1":411,"y1":132,"x2":582,"y2":93,"x":677,"y":59},{"type":"L","x":718,"y":126},{"type":"C","x1":619,"y1":158,"x2":451,"y2":196,"x":317,"y":210},{"type":"Z"},{"type":"M","x":369,"y":275},{"type":"C","x1":450,"y1":257,"x2":553,"y2":223,"x":609,"y":196},{"type":"L","x":648,"y":255},{"type":"C","x1":590,"y1":281,"x2":488,"y2":313,"x":408,"y":329},{"type":"Z"},{"type":"M","x":388,"y":554},{"type":"L","x":626,"y":554},{"type":"C","x1":592,"y1":523,"x2":551,"y2":494,"x":504,"y":468},{"type":"C","x1":458,"y1":493,"x2":419,"y2":523,"x":388,"y":554},{"type":"Z"},{"type":"M","x":704,"y":629},{"type":"L","x":691,"y":625},{"type":"L","x":451,"y":625},{"type":"C","x1":465,"y1":642,"x2":477,"y2":659,"x":488,"y":677},{"type":"L","x":412,"y":703},{"type":"C","x1":363,"y1":626,"x2":279,"y2":551,"x":196,"y":502},{"type":"C","x1":214,"y1":489,"x2":244,"y2":462,"x":258,"y":446},{"type":"C","x1":284,"y1":463,"x2":310,"y2":484,"x":336,"y":506},{"type":"C","x1":363,"y1":479,"x2":394,"y2":454,"x":429,"y":431},{"type":"C","x1":348,"y1":396,"x2":261,"y2":370,"x":178,"y":354},{"type":"C","x1":195,"y1":337,"x2":213,"y2":300,"x":222,"y":278},{"type":"C","x1":317,"y1":300,"x2":417,"y2":336,"x":507,"y":384},{"type":"C","x1":587,"y1":342,"x2":677,"y2":310,"x":767,"y":291},{"type":"C","x1":778,"y1":312,"x2":801,"y2":344,"x":819,"y":360},{"type":"C","x1":738,"y1":375,"x2":657,"y2":398,"x":583,"y":430},{"type":"C","x1":655,"y1":477,"x2":715,"y2":532,"x":756,"y":597},{"type":"Z"},{"type":"M","x":173,"y":42},{"type":"L","x":173,"y":713},{"type":"L","x":824,"y":713},{"type":"L","x":824,"y":42},{"type":"Z"},{"type":"M","x":84,"y":797},{"type":"L","x":84,"y":-79},{"type":"L","x":173,"y":-79},{"type":"L","x":173,"y":-40},{"type":"L","x":824,"y":-40},{"type":"L","x":824,"y":-79},{"type":"L","x":917,"y":-79},{"type":"L","x":917,"y":797},{"type":"Z"}]';
+        opentype.load(fontUrl, function(err, font) {
+            if (err) {
+                alert('Font could not be loaded: ' + err);
+            } else {
+                // Construct a Path object containing the letter shapes of the given text.
+                // The other parameters are x, y and fontSize.
+                // Note that y is the position of the baseline.
+
+                // 0-5 5-10 10-15 15-32 32-37 37-46
+                var path = font.getPath('图', 0, 50, 12);
+                path.commands = JSON.parse(commands).slice(32).map(v => ({...v, y: v.y + 79})).concat({"type":"Z"});
+                console.log(path);
+                // If you just want to draw the text you can also use font.draw(ctx, text, x, y, fontSize).
+                // path.draw(ctx);
+
+                ctx.beginPath();
+                for (let i = 0; i < path.commands.length; i += 1) {
+                    const cmd = path.commands[i];
+                    if (cmd.type === 'M') {
+                        ctx.moveTo(cmd.x, cmd.y);
+                    } else if (cmd.type === 'L') {
+                        ctx.lineTo(cmd.x, cmd.y);
+                    } else if (cmd.type === 'C') {
+                        ctx.bezierCurveTo(cmd.x1, cmd.y1, cmd.x2, cmd.y2, cmd.x, cmd.y);
+                    } else if (cmd.type === 'Q') {
+                        ctx.quadraticCurveTo(cmd.x1, cmd.y1, cmd.x, cmd.y);
+                    } else if (cmd.type === 'Z') {
+                        ctx.closePath();
+                    }
+                }
+
+                if (true) {
+                    ctx.fillStyle = 'black';
+                    ctx.fill();
+                }
+
+                if (this.stroke) {
+                    ctx.strokeStyle = this.stroke;
+                    ctx.lineWidth = this.strokeWidth;
+                    ctx.stroke();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

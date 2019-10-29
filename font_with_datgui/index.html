@@ -89,10 +89,17 @@
             if ( glyph.o ) {
 
                 var outline = glyph._cachedOutline || ( glyph._cachedOutline = glyph.o.split( ' ' ) );
+                var result = [];
 
+                var count = 0;
+                var prevM = null;
                 for ( var i = 0, l = outline.length; i < l; ) {
 
                     var action = outline[ i ++ ];
+
+                    var obj = {action};
+                    // if (action === 'm') {count++};
+                    // if (count === 2) break;
 
                     switch ( action ) {
 
@@ -102,7 +109,9 @@
                             y = outline[ i ++ ] * scale + offsetY;
 
                             path.moveTo( x, y );
-
+                            obj.x = x;
+                            obj.y = y;
+                            prevM = {x, y};
                             break;
 
                         case 'l': // lineTo
@@ -111,7 +120,8 @@
                             y = outline[ i ++ ] * scale + offsetY;
 
                             path.lineTo( x, y );
-
+                            obj.x = x;
+                            obj.y = y;
                             break;
 
                         case 'q': // quadraticCurveTo
@@ -122,7 +132,10 @@
                             cpy1 = outline[ i ++ ] * scale + offsetY;
 
                             path.quadraticCurveTo( cpx1, cpy1, cpx, cpy );
-
+                            obj.x = cpx;
+                            obj.y = cpy;
+                            obj.x1 = cpx1;
+                            obj.y1 = cpy1;
                             break;
 
                         case 'b': // bezierCurveTo
@@ -136,11 +149,23 @@
 
                             path.bezierCurveTo( cpx1, cpy1, cpx2, cpy2, cpx, cpy );
 
+                            obj.x = cpx;
+                            obj.y = cpy;
+                            obj.x1 = cpx1;
+                            obj.y1 = cpy1;
+                            obj.x2 = cpx2;
+                            obj.y2 = cpy2;
+
+                            break;
+                        case 'z':
+                            // path.moveTo( 0, 0 );
                             break;
 
                     }
-
+                    result.push(obj);
                 }
+                // 0-9 9-14 14-31 31-36 36-41 41
+                console.log(result);
 
             }
 
@@ -220,6 +245,14 @@
                 url: 'https://js.tuguaishou.com/fonts/zh35hsxheht.woff?t=1555041828',
                 label: "字魂35号经典雅黑",
                 type: 'woff',
+            }, {
+                url: 'https://st0.dancf.com/csc/1/fonts/227/20180417-014250-11.woff',
+                label: "思源黑体中等",
+                type: 'woff',
+            }, {
+                url: 'https://st0.dancf.com/csc/156/fonts/0/20190430-011812-558f.woff',
+                label: "潮字杜小",
+                type: 'woff',
             }
         ];
 
@@ -234,8 +267,8 @@
             bevelOffset: bevelOffset,
             bevelSegments: bevelSegments,
 
-            text: '图怪兽3D文字DEMO',
-            fontFamily: '字魂布丁体',
+            text: '图',
+            fontFamily: '思源黑体中等',
             depth: textHeight,
 
             // material-front
@@ -270,7 +303,7 @@
 
             // SCENE
             scene = new THREE.Scene();
-            scene.background = new THREE.Color( 0x000000 );
+            scene.background = new THREE.Color( 0xFFFFFF );
             scene.fog = new THREE.Fog( 0x000000, 250, 1400 );
 
             // LIGHTS
