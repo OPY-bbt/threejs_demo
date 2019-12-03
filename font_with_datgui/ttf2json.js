@@ -45,34 +45,10 @@ var convert = function(font, text){
                 token.x_min = Math.round(glyph.xMin * scale);
                 token.x_max = Math.round(glyph.xMax * scale);
                 token.o = ""
-                // if (reverseTypeface.checked) {glyph.path.commands = reverseCommands(glyph.path.commands);}
-                // console.log(glyphCharacter, glyph.path.commands);
-                //图 0-5 5-10 10-15 15-32 32-37 37-46
-
-                /**
-                 * The mechanism for converting font paths expects a clockwise winding order for solid/outer shapes and a counterclockwise order for the holes but this only matters if a path consists of several subpaths.
-                 */
-                const array = glyphCharacter === '?' ? glyph.path.commands : glyph.path.commands.slice(0, 32);
-                const array1 = [
-                    ...array,
-                    {type: "M", x: 824, y: 42},
-                    {type: "L", x: 824, y: 713},
-                    {type: "L", x: 173, y: 713},
-                    {type: "L", x: 173, y: 42},
-                    {type: "Z"},
-                    {type: "M", x: 917, y: 797},
-                    {type: "L", x: 917, y: -79},
-                    {type: "L", x: 824, y: -79},
-                    {type: "L", x: 824, y: -40},
-                    {type: "L", x: 173, y: -40},
-                    {type: "L", x: 173, y: -79},
-                    {type: "L", x: 84, y: -79},
-                    {type: "L", x: 84, y: 797},
-                ];
-                array1.forEach(function(command,i){
-                    var type = command.type;
-                    if (command.type.toLowerCase() === "c") {type = "b";}
-                    token.o += type.toLowerCase();
+                if (reverseTypeface.checked) {glyph.path.commands = reverseCommands(glyph.path.commands);}
+                glyph.path.commands.forEach(function(command,i){
+                    if (command.type.toLowerCase() === "c") {command.type = "b";}
+                    token.o += command.type.toLowerCase();
                     token.o += " "
                     if (command.x !== undefined && command.y !== undefined){
                         token.o += Math.round(command.x * scale);
