@@ -13,7 +13,7 @@
 <body>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
     <script src="ttf2json.js"></script>
-    <script src="https://threejs.org/build/three.js"></script>
+    <script src="./three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
     <script>
         /***
@@ -100,7 +100,6 @@
                     var obj = {action};
                     // if (action === 'm') {count++};
                     // if (count === 2) break;
-
                     switch ( action ) {
 
                         case 'm': // moveTo
@@ -158,14 +157,13 @@
 
                             break;
                         case 'z':
-                            // path.moveTo( 0, 0 );
+                            // path.moveTo( 0, 0, 0 );
                             break;
 
                     }
                     result.push(obj);
                 }
                 // 0-9 9-14 14-31 31-36 36-41 41
-                console.log(result);
 
             }
 
@@ -330,6 +328,7 @@
 
             // EVENTS
             renderer.domElement.addEventListener( 'mousedown', onDocumentMouseDown, false );
+            renderer.domElement.addEventListener( 'touchstart', onDocumentMouseDown, false );
             window.addEventListener( 'resize', onWindowResize, false );
         }
 
@@ -415,6 +414,10 @@
             var loader = new THREE.FontLoader();
             var targetFont = font_urls.find(v => v.label === controls.fontFamily);
 
+            if (!targetFont) {
+                return;
+            }
+
             switch(targetFont.type) {
                 case 'json': {
                     loader.load( targetFont.url, function ( response ) {
@@ -427,9 +430,10 @@
                 case 'ttf': {
                     function applyFont() {
                         console.time("convert font");
-                        var json = convert(targetFont.parsedBuffer, controls.text + '?');
+                        var json = convert(targetFont.parsedBuffer, controls.text);
                         console.timeEnd("convert font");
                         font = loader.parse(JSON.parse(json));
+                        console.log(font);
                         refreshText();
                     }
 
@@ -523,16 +527,20 @@
             document.addEventListener( 'mousemove', onDocumentMouseMove, false );
             document.addEventListener( 'mouseup', onDocumentMouseUp, false );
             document.addEventListener( 'mouseout', onDocumentMouseOut, false );
-            mouseXOnMouseDown = event.clientX - windowHalfX;
-            mouseYOnMouseDown = event.clientY - windowHalfY;
+
+            document.addEventListener( 'touchmove', onDocumentMouseMove, false );
+            document.addEventListener( 'touchend', onDocumentMouseUp, false );
+
+            mouseXOnMouseDown = event.touches ? event.touches[0].clientX : event.clientX - windowHalfX;
+            mouseYOnMouseDown = event.touches ? event.touches[0].clientY : event.clientY - windowHalfY;
             targetRotationOnMouseDown = targetRotation;
             targetRotationXOnMouseDown = targetRotationX;
 
         }
 
         function onDocumentMouseMove( event ) {
-            mouseX = event.clientX - windowHalfX;
-            mouseY = event.clientY - windowHalfY;
+            mouseX = event.touches ? event.touches[0].clientX : event.clientX - windowHalfX;
+            mouseY = event.touches ? event.touches[0].clientY : event.clientY - windowHalfY;
             targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.02;
             targetRotationX = targetRotationXOnMouseDown + ( mouseY - mouseYOnMouseDown ) * 0.02;
 
@@ -542,12 +550,18 @@
             document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
             document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
             document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+
+            document.removeEventListener( 'touchmove', onDocumentMouseMove, false );
+            document.removeEventListener( 'touchend', onDocumentMouseUp, false );
         }
 
         function onDocumentMouseOut() {
             document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
             document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
             document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+
+            document.removeEventListener( 'touchmove', onDocumentMouseMove, false );
+            document.removeEventListener( 'touchend', onDocumentMouseUp, false );
         }
 
         function onWindowResize() {
