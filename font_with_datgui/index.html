@@ -15,6 +15,8 @@
     <script src="ttf2json.js"></script>
     <script src="./three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+    <script src="./libtess.min.js"></script>
+    <script src="./triangulate.js"></script>
     <script>
         /***
          *  rewrite prototype method
@@ -157,7 +159,7 @@
 
                             break;
                         case 'z':
-                            // path.moveTo( 0, 0, 0 );
+                            // path.moveTo( 0, 0 );
                             break;
 
                     }
@@ -170,6 +172,42 @@
             // add letter-space
             return { offsetX: glyph.ha * scale * window.controls.letterSpace, path: path };
 
+        }
+
+        var oldTriangulateShape = THREE.ShapeUtils.triangulateShape;
+        THREE.ShapeUtils.triangulateShape = function(contour, holes) {
+            var flat_contour = contour.map(v => [v.x, v.y]).flat();
+            var triangles = triangulate([new Float32Array(flat_contour)]);
+
+            //faces: [[triangle_index, triangle_index, triangle_index], face, ...]
+            // console.log(contour);
+            // console.log(triangles);
+            
+            function isEqual(a, b) {
+                return Math.abs(a - b) < 1e-3;
+            }
+
+            // 1. recover vertex index
+            var indexes = [];
+            for( var i = 0; i < triangles.length; i += 2) {
+                var t1 = triangles[i];
+                var t2 = triangles[i + 1];
+
+                var index = contour.findIndex(v => isEqual(v.x, t1) && isEqual(v.y, t2));
+                if (index < 0) {
+                    console.error("can't find vertex index", t1, t2);
+                } else {
+                    indexes.push(index);
+                }
+            }
+
+            // 2. calculate three vertexes in face
+            var faces = [];
+            for( var i = 0; i < indexes.length; i += 3) {
+                faces.push(indexes.slice(i, i+3));
+            }
+
+            return [];
         }
         
     </script>
