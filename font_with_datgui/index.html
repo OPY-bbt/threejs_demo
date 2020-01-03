@@ -13,6 +13,7 @@
 <body>
     <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
     <script src="ttf2json.js"></script>
+    <!-- <script src="https://threejs.org/build/three.js"></script> -->
     <script src="./three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
     <script src="./libtess.min.js"></script>
@@ -163,7 +164,7 @@
             var triangles = triangulate(flat_contours.map(flat_contour => new Float32Array(flat_contour)));
             
             function isEqual(a, b) {
-                return Math.abs(a - b) < 1e-1;
+                return Math.abs(a - b) < 1;
             }
 
             // 1. recover vertex index
@@ -187,6 +188,163 @@
             }
 
             return faces;
+        }
+
+        THREE.ShapePath.prototype.toShapes = function ( isCCW, noHoles ) {
+            function toShapesNoHoles( inSubpaths ) {
+
+                var shapes = [];
+
+                for ( var i = 0, l = inSubpaths.length; i < l; i ++ ) {
+
+                    var tmpPath = inSubpaths[ i ];
+
+                    var tmpShape = new Shape();
+                    tmpShape.curves = tmpPath.curves;
+
+                    shapes.push( tmpShape );
+
+                }
+
+                return shapes;
+
+            }
+
+            function isPointInsidePolygon( inPt, inPolygon ) {
+
+                var polyLen = inPolygon.length;
+
+                // inPt on polygon contour => immediate success    or
+                // toggling of inside/outside at every single! intersection point of an edge
+                //  with the horizontal line through inPt, left of inPt
+                //  not counting lowerY endpoints of edges and whole edges on that line
+                var inside = false;
+                for ( var p = polyLen - 1, q = 0; q < polyLen; p = q ++ ) {
+
+                    var edgeLowPt = inPolygon[ p ];
+                    var edgeHighPt = inPolygon[ q ];
+
+                    var edgeDx = edgeHighPt.x - edgeLowPt.x;
+                    var edgeDy = edgeHighPt.y - edgeLowPt.y;
+
+                    if ( Math.abs( edgeDy ) > Number.EPSILON ) {
+
+                        // not parallel
+                        if ( edgeDy < 0 ) {
+
+                            edgeLowPt = inPolygon[ q ]; edgeDx = - edgeDx;
+                            edgeHighPt = inPolygon[ p ]; edgeDy = - edgeDy;
+
+                        }
+                        if ( ( inPt.y < edgeLowPt.y ) || ( inPt.y > edgeHighPt.y ) ) 		{ continue; }
+
+                        if ( inPt.y === edgeLowPt.y ) {
+
+                            if ( inPt.x === edgeLowPt.x )		{ return	true; }		// inPt is on contour ?
+                            // continue;				// no intersection or edgeLowPt => doesn't count !!!
+
+                        } else {
+
+                            var perpEdge = edgeDy * ( inPt.x - edgeLowPt.x ) - edgeDx * ( inPt.y - edgeLowPt.y );
+                            if ( perpEdge === 0 )				{ return	true; }		// inPt is on contour ?
+                            if ( perpEdge < 0 ) 				{ continue; }
+                            inside = ! inside;		// true intersection left of inPt
+
+                        }
+
+                    } else {
+
+                        // parallel or collinear
+                        if ( inPt.y !== edgeLowPt.y ) 		{ continue; }			// parallel
+                        // edge lies on the same horizontal line as inPt
+                        if ( ( ( edgeHighPt.x <= inPt.x ) && ( inPt.x <= edgeLowPt.x ) ) ||
+                            ( ( edgeLowPt.x <= inPt.x ) && ( inPt.x <= edgeHighPt.x ) ) )		{ return	true; }	// inPt: Point on contour !
+                        // continue;
+
+                    }
+
+                }
+
+                return	inside;
+
+            }
+
+            var isClockWise = THREE.ShapeUtils.isClockWise;
+
+            var subPaths = this.subPaths;
+            if ( subPaths.length === 0 ) { return []; }
+
+            if ( noHoles === true )	{ return	toShapesNoHoles( subPaths ); }
+
+
+            var solid, tmpPath, tmpShape, shapes = [];
+
+            if ( subPaths.length === 1 ) {
+
+                tmpPath = subPaths[ 0 ];
+                tmpShape = new Shape();
+                tmpShape.curves = tmpPath.curves;
+                shapes.push( tmpShape );
+                return shapes;
+
+            }
+
+            var holesFirst = ! isClockWise( subPaths[ 0 ].getPoints() );
+            holesFirst = isCCW ? ! holesFirst : holesFirst;
+
+            // console.log("Holes first", holesFirst);
+
+            var betterShapeHoles = [];
+            var newShapes = [];
+            var newShapeHoles = [];
+            var mainIdx = 0;
+            var tmpPoints;
+
+            newShapes[ mainIdx ] = undefined;
+            newShapeHoles[ mainIdx ] = [];
+
+            for ( var i = 0, l = subPaths.length; i < l; i ++ ) {
+
+                tmpPath = subPaths[ i ];
+                tmpPoints = tmpPath.getPoints();
+                solid = isClockWise( tmpPoints );
+                solid = isCCW ? ! solid : solid;
+
+                if ( mainIdx == 0 ) {
+                    newShapes[ mainIdx ] = { s: new THREE.Shape(), p: tmpPoints };
+                    newShapes[ mainIdx ].s.curves = tmpPath.curves;
+                    newShapeHoles[ mainIdx ] = [];
+                    mainIdx++;
+                    //console.log('cw', i);
+
+                } else {
+                    newShapeHoles[ 0 ].push( { h: tmpPath, p: tmpPoints[ 0 ] } );
+
+                    //console.log('ccw', i);
+
+                }
+
+            }
+
+            var tmpHoles;
+
+            for ( var i = 0, il = newShapes.length; i < il; i ++ ) {
+
+                tmpShape = newShapes[ i ].s;
+                shapes.push( tmpShape );
+                tmpHoles = newShapeHoles[ i ];
+
+                for ( var j = 0, jl = tmpHoles.length; j < jl; j ++ ) {
+
+                    tmpShape.holes.push( tmpHoles[ j ].h );
+
+                }
+
+            }
+
+            // console.log("shape", shapes);
+
+            return shapes;
         }
         
     </script>
