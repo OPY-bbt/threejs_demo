@@ -306,7 +306,7 @@
             point_light_color: 0xffffff,
             point_light_intensity: 1.5,
             point_light_x: 0,
-            point_light_y: 200,
+            point_light_y: 300,
             point_light_z: 90,
         };
 
@@ -450,7 +450,7 @@
                         var json = convert(targetFont.parsedBuffer, controls.text);
                         console.timeEnd("convert font");
                         font = loader.parse(JSON.parse(json));
-                        console.log(font);
+                        // console.log(font);
                         refreshText();
                     }
 
