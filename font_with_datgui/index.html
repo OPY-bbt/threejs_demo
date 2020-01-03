@@ -93,15 +93,10 @@
                 var outline = glyph._cachedOutline || ( glyph._cachedOutline = glyph.o.split( ' ' ) );
                 var result = [];
 
-                var count = 0;
-                var prevM = null;
                 for ( var i = 0, l = outline.length; i < l; ) {
 
                     var action = outline[ i ++ ];
 
-                    var obj = {action};
-                    // if (action === 'm') {count++};
-                    // if (count === 2) break;
                     switch ( action ) {
 
                         case 'm': // moveTo
@@ -110,9 +105,7 @@
                             y = outline[ i ++ ] * scale + offsetY;
 
                             path.moveTo( x, y );
-                            obj.x = x;
-                            obj.y = y;
-                            prevM = {x, y};
+
                             break;
 
                         case 'l': // lineTo
@@ -121,8 +114,7 @@
                             y = outline[ i ++ ] * scale + offsetY;
 
                             path.lineTo( x, y );
-                            obj.x = x;
-                            obj.y = y;
+
                             break;
 
                         case 'q': // quadraticCurveTo
@@ -133,10 +125,7 @@
                             cpy1 = outline[ i ++ ] * scale + offsetY;
 
                             path.quadraticCurveTo( cpx1, cpy1, cpx, cpy );
-                            obj.x = cpx;
-                            obj.y = cpy;
-                            obj.x1 = cpx1;
-                            obj.y1 = cpy1;
+
                             break;
 
                         case 'b': // bezierCurveTo
@@ -150,41 +139,31 @@
 
                             path.bezierCurveTo( cpx1, cpy1, cpx2, cpy2, cpx, cpy );
 
-                            obj.x = cpx;
-                            obj.y = cpy;
-                            obj.x1 = cpx1;
-                            obj.y1 = cpy1;
-                            obj.x2 = cpx2;
-                            obj.y2 = cpy2;
-
                             break;
                         case 'z':
                             // path.moveTo( 0, 0 );
                             break;
 
                     }
-                    result.push(obj);
                 }
+                // console.log(path);
                 // 0-9 9-14 14-31 31-36 36-41 41
 
             }
-
+            // path.subPaths = path.subPaths.slice(-1);
             // add letter-space
             return { offsetX: glyph.ha * scale * window.controls.letterSpace, path: path };
 
         }
 
         var oldTriangulateShape = THREE.ShapeUtils.triangulateShape;
-        THREE.ShapeUtils.triangulateShape = function(contour, holes) {
-            var flat_contour = contour.map(v => [v.x, v.y]).flat();
-            var triangles = triangulate([new Float32Array(flat_contour)]);
-
-            //faces: [[triangle_index, triangle_index, triangle_index], face, ...]
-            // console.log(contour);
-            // console.log(triangles);
+        THREE.ShapeUtils.triangulateShape = function(cs, holes) {
+            var contours = [cs, ...holes];
+            var flat_contours = contours.map(contour => contour.map(v => [v.x, v.y]).flat());
+            var triangles = triangulate(flat_contours.map(flat_contour => new Float32Array(flat_contour)));
             
             function isEqual(a, b) {
-                return Math.abs(a - b) < 1e-3;
+                return Math.abs(a - b) < 1e-1;
             }
 
             // 1. recover vertex index
@@ -193,7 +172,7 @@
                 var t1 = triangles[i];
                 var t2 = triangles[i + 1];
 
-                var index = contour.findIndex(v => isEqual(v.x, t1) && isEqual(v.y, t2));
+                var index = contours.flat().findIndex(v => isEqual(v.x, t1) && isEqual(v.y, t2));
                 if (index < 0) {
                     console.error("can't find vertex index", t1, t2);
                 } else {
@@ -207,7 +186,7 @@
                 faces.push(indexes.slice(i, i+3));
             }
 
-            return [];
+            return faces;
         }
         
     </script>
@@ -303,8 +282,8 @@
             bevelOffset: bevelOffset,
             bevelSegments: bevelSegments,
 
-            text: '图',
-            fontFamily: '思源黑体中等',
+            text: '图怪兽',
+            fontFamily: '思源宋体',
             depth: textHeight,
 
             // material-front
@@ -327,7 +306,7 @@
             point_light_color: 0xffffff,
             point_light_intensity: 1.5,
             point_light_x: 0,
-            point_light_y: 100,
+            point_light_y: 200,
             point_light_z: 90,
         };
 
@@ -538,18 +517,16 @@
 
             materials = [
                 controls.frontTextureEnabled ? new THREE.MeshPhongMaterial( {
-                    transparent: true,
                     map: frontTexture,
                 }) : new THREE.MeshPhongMaterial( {
                     color: parseInt(frontColor, 16),
-                    transparent: true,
                 }), // front
                 controls.sideTextureEnabled ? new THREE.MeshPhongMaterial( {
-                    transparent: true,
                     map: frontTexture,
+                    side: THREE.DoubleSide,
                 }) : new THREE.MeshPhongMaterial( {
                     color: parseInt(sideColor, 16),
-                    transparent: true,
+                    side: THREE.DoubleSide,
                 }), // side
             ];
             materials[0].opacity = controls.frontOpacity;
