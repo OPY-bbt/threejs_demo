@@ -282,7 +282,7 @@
             if ( subPaths.length === 1 ) {
 
                 tmpPath = subPaths[ 0 ];
-                tmpShape = new Shape();
+                tmpShape = new THREE.Shape();
                 tmpShape.curves = tmpPath.curves;
                 shapes.push( tmpShape );
                 return shapes;
@@ -358,7 +358,7 @@
             fov = 30,
 
             bevelThickness = 2,
-            bevelSize = 1.5,
+            bevelSize = 0,
             bevelOffset = 0,
             bevelSegments = 3,
             bevelEnabled = true,
