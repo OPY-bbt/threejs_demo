@@ -431,7 +431,7 @@
 
         var controls = {
             size: size,
-            frontColor: "#FFFFFF",
+            frontColor: "#e81818",
             sideColor: '#FFFFFF',
             letterSpace: 1,
             lineHeight: 1,
@@ -455,7 +455,7 @@
             // light
             directional_light_enabled: true,
             directional_light_color: 0xffffff,
-            directional_light_intensity: 0.125,
+            directional_light_intensity: 1.33,
             directional_light_x: 0,
             directional_light_y: 0,
             directional_light_z: 1,
@@ -477,16 +477,21 @@
             // SCENE
             scene = new THREE.Scene();
             scene.background = new THREE.Color( 0xFFFFFF );
-            scene.fog = new THREE.Fog( 0x000000, 250, 1400 );
+            scene.fog = new THREE.Fog( 0xcc0000, 1, 1000 );
 
             // LIGHTS
             var dirLight = new THREE.DirectionalLight( controls.directional_light_color, controls.directional_light_intensity );
             dirLight.position.set( controls.directional_light_x, controls.directional_light_y, controls.directional_light_z ).normalize();
+            dirLight.visible = controls.directional_light_enabled;
             scene.add( dirLight );
 
             var pointLight = new THREE.PointLight( controls.point_light_color, controls.point_light_intensity );
             pointLight.position.set( controls.point_light_x, controls.point_light_y, controls.point_light_z );
+            pointLight.visible = controls.point_light_enabled;
             scene.add( pointLight );
+
+            var ambientLight = new THREE.AmbientLight( '#ffffff', 1);
+            this.scene.add( ambientLight );
 
             // GROUP
             group = new THREE.Group();
@@ -499,6 +504,7 @@
             renderer = new THREE.WebGLRenderer( { antialias: true } );
             renderer.setPixelRatio( window.devicePixelRatio );
             renderer.setSize( width, height );
+            renderer.setViewport(0, 0, width, height);
             document.body.appendChild( renderer.domElement );
 
             // EVENTS
