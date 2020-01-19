@@ -39,7 +39,6 @@ var convert = function(font, text){
                 needToExport = (restrictCharacterSetInput.value.indexOf (glyphCharacter) != -1);
             }
             if (needToExport) {
-                console.log(glyph.index);
                 var token = {};
                 token.ha = Math.round(glyph.advanceWidth * scale);
                 token.x_min = Math.round(glyph.xMin * scale);
