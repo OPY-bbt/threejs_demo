@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <script src="./index.js"></script>
+    <script>
+      var TWO_PI = 2 * Math.PI;
+      var angle;
+
+      var Particle = EFA({
+        x: 0,
+        y: 1,
+        r: 2,
+        vx: 3,
+        vy: 4
+      });
+
+      function makeParticle() {
+        var p = new Particle(5);
+        p[0] = 0;
+        p[1] = 0;
+        p[2] = 0;
+        p[3] = 0;
+        p[4] = 0;
+        return p;
+      }
+
+      Particle.prototype.render = function(g) {
+        // Draw the circle.
+        g.beginPath();
+        g.arc(this[0], this[1], this[2], 0, TWO_PI, false);
+        g.fill();
+      };
+
+      Particle.prototype.update = function(fizzyText) {
+        // Where should we move?
+        angle =
+          noise(
+            this[0] / fizzyText.noiseScale,
+            this[1] / fizzyText.noiseScale
+          ) * fizzyText.noiseStrength;
+
+        // Are we within the boundaries of the image?
+
+        // If we're on top of a black pixel, grow.
+        // If not, shrink.
+        if (fizzyText.getColor(this[0], this[1]) > 0) {
+          this[2] += fizzyText.growthSpeed;
+        } else {
+          this[2] -= fizzyText.growthSpeed;
+        }
+        // Math.random() > 0.5 ? this[2] += fizzyText.growthSpeed : this[2] -= fizzyText.growthSpeed;
+
+
+        // This velocity is used by the explode function.
+        this[3] *= 0.8;
+        this[4] *= 0.8;
+
+        // Change our position based on the flow field and our
+        // explode velocity.
+        this[0] += Math.cos(angle) * fizzyText.speed + this[3];
+        this[1] -= Math.sin(angle) * fizzyText.speed + this[4];
+
+        if (this[2] > fizzyText.maxSize) {
+          this[2] = fizzyText.maxSize;
+        } else if (this[2] < 0) {
+          this[2] = 0;
+          this[0] = Math.random() * fizzyText.width;
+          this[1] =
+            fizzyText.height2 + (Math.random() * 2 - 1) * fizzyText.fontSize2;
+          return false;
+        }
+        return true;
+      };
+      var FizzyText = function(message, w, h, isDark, fontSize) {
+        // These are the variables _this we manipulate with gui-dat.
+        // Notice they're all defined with "this". _this makes them public.
+        // Otherwise, gui-dat can't see them.
+
+        this.growthSpeed = 0.37; // how fast do particles change size?
+        this.maxSize = 5; // how big can they get?
+        this.noiseStrength = 10; // how turbulent is the flow?
+        this.speed = 0.4; // how fast do particles move?
+        this.displayOutline = false; // should we draw the message as a stroke?
+        this.framesRendered = 0;
+
+        // Object defineProperty makes JavaScript believe _this
+        // we've defined a variable 'this.message'. This way, whenever we
+        // change the message variable, we can call some more functions.
+
+        Object.defineProperty(this, "message", {
+          get: function() {
+            return message;
+          },
+
+          set: function(m) {
+            message = m;
+            createBitmap(message);
+          }
+        });
+
+        // We can even add functions to the GUI! As long as they have
+        // 0 arguments, we can call them from the dat-gui panel.
+
+        this.explode = function() {
+          var mag = 30;
+          for (var i in particles) {
+            var angle = Math.random() * TWO_PI;
+            particles[i][3] = Math.cos(angle) * mag;
+            particles[i][4] = Math.sin(angle) * mag;
+          }
+        };
+
+        ////////////////////////////////////////////////////////////////
+
+        var _this = this;
+
+        var width = w,
+          height = h;
+
+        var fontSize = fontSize || 140;
+        var noiseScale = (this.noiseScale = 300);
+
+        this.color0 = "#00aeff";
+        this.color1 = "#0fa954";
+        this.color2 = "#54396e";
+        this.color3 = "#e61d5f";
+
+        // This is the context we use to get a bitmap of text using
+        // the getImageData function.
+        var r = document.createElement("canvas");
+        var s = r.getContext("2d");
+
+        // This is the context we actually use to draw.
+        var c = (this.domElement = document.createElement("canvas"));
+        var g = c.getContext("2d");
+
+        this.domElement.width = this.width = r.width = width;
+        this.domElement.height = this.height = r.height = height;
+
+        // Stores bitmap image
+        var pixels = [];
+
+        // Stores a list of particles
+        var particles = [];
+        var effect = isDark ? "darker" : "lighter";
+
+        // Set g.font to the same font as the bitmap canvas, incase we
+        // want to draw some outlines.
+        s.font = g.font =
+          "bold " + fontSize + "px Helvetica, Arial, sans-serif";
+        g.globalCompositeOperation = effect;
+
+        // Instantiate some particles
+        for (var i = 0; i < 1200; i++) {
+          particles.push(makeParticle());
+        }
+
+        // This function creates a bitmap of pixels based on your message
+        // It's called every time we change the message property.
+        var createBitmap = function(msg) {
+          s.clearRect(0, 0, width, height);
+          s.fillStyle = "#f00";
+          s.textAlign = g.textAlign = "center";
+          s.textBaseline = g.textBaseline = "middle";
+          s.fillText(msg, width / 2, height / 2);
+
+          // Pull reference
+          var imageData = s.getImageData(0, 0, width, height);
+          pixels = imageData.data;
+        };
+
+        var p,
+          j,
+          l = 4,
+          k;
+        var ll = particles.length / l;
+        var height2 = (this.height2 = height / 2),
+          fontSize2 = (this.fontSize2 = fontSize / 2);
+
+        // Called once per frame, updates the animation.
+        this.render = function() {
+          _this.framesRendered++;
+          g.clearRect(0, 0, width, height);
+
+          if (_this.displayOutline || true) {
+            g.globalCompositeOperation = "source-over";
+            g.strokeStyle = isDark ? "#000" : "#fff";
+            g.lineWidth = 2.0;
+            g.strokeText(message, width / 2, height / 2);
+            g.globalCompositeOperation = effect;
+          }
+
+          for (var i = 0; i < l; i++) {
+            g.fillStyle = this["color" + i];
+            k = ll * i;
+            for (j = 0; j < ll; j++) {
+              p = particles[j + k];
+              if (p.update(this)) p.render(g);
+            }
+          }
+        };
+
+        this.getColor = function(x, y) {
+          // Just use the red channel
+          return pixels[(~~y * width + ~~x) * 4];
+        };
+
+        // This calls the setter we've defined above, so it also calls
+        // the createBitmap function.
+        this.message = message;
+      };
+    </script>
+    <script>
+        var f = new FizzyText('hello world', 600, 150, true, 100);
+        document.body.appendChild(f.domElement);
+
+        function render() {
+            f.render(true);
+            requestAnimationFrame(render);
+        }
+
+        render();
+    </script>
+  </body>
+</html>
