@@ -38,7 +38,7 @@
             curveSegments = 4,
 
             textHeight = 20,
-            size = 150;
+            size = 200;
 
         var targetRotation = 0;
         var targetRotationOnMouseDown = 0;
@@ -201,7 +201,7 @@
         function initGUI() {
             var gui = new dat.GUI({width: 300});
             var c_mesh_text = gui.add(controls, 'text').onChange(loadFont);
-            var c_mesh_size = gui.add(controls, 'size', 50, 150).step(1).onChange(refreshText);
+            var c_mesh_size = gui.add(controls, 'size', 50, 300).step(1).onChange(refreshText);
             var c_mesh_letterSpace = gui.add(controls, 'letterSpace', 0.5, 3).step(0.1).onChange(refreshText);
             var c_mesh_lineHeight = gui.add(controls, 'lineHeight', 0.5, 3).step(0.1).onChange(refreshText);
             var c_mesh_fontFamily = gui.add(controls, 'fontFamily', font_urls.map(v => v.label)).onChange(loadFont);
