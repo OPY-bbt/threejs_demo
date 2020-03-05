@@ -18,356 +18,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
     <script src="./libtess.min.js"></script>
     <script src="./triangulate.js"></script>
-    <script>
-        /***
-         *  rewrite prototype method
-         * 
-         ***/
-
-        THREE.Font.prototype.generateShapes = function(text, size) {
-            if ( size === undefined ) size = 100;
-
-            var shapes = [];
-            var paths = createPaths( text, size, this.data );
-
-            for ( var p = 0, pl = paths.length; p < pl; p ++ ) {
-
-                Array.prototype.push.apply( shapes, paths[ p ].toShapes() );
-
-            }
-
-            return shapes;
-        }
-
-        function createPaths( text, size, data ) {
-
-            var chars = Array.from ? Array.from( text ) : String( text ).split( '' );
-            var scale = size / data.resolution;
-            
-            // add line-height
-            var line_height = ( data.boundingBox.yMax - data.boundingBox.yMin + data.underlineThickness ) * scale * window.controls.lineHeight;
-
-            var paths = [];
-
-            var offsetX = 0, offsetY = 0;
-
-            for ( var i = 0; i < chars.length; i ++ ) {
-
-                var char = chars[ i ];
-
-                if ( char === '\n' ) {
-
-                    offsetX = 0;
-                    offsetY -= line_height;
-
-                } else {
-                    var ret = createPath( char, scale, offsetX, offsetY, char.charCodeAt(0) < 255 ? polyfill_font.data : data );
-                    offsetX += ret.offsetX;
-                    paths.push( ret.path );
-
-                }
-
-            }
-
-            return paths;
-
-        }
-
-        function createPath( char, scale, offsetX, offsetY, data ) {
-
-            var glyph = data.glyphs[ char ] || data.glyphs[ '?' ];
-
-            if ( ! glyph ) {
-
-                console.error( 'THREE.Font: character "' + char + '" does not exists in font family ' + data.familyName + '.' );
-
-                return;
-
-            }
-
-            var path = new THREE.ShapePath();
-
-            var x, y, cpx, cpy, cpx1, cpy1, cpx2, cpy2;
-
-            if ( glyph.o ) {
-
-                var outline = glyph._cachedOutline || ( glyph._cachedOutline = glyph.o.split( ' ' ) );
-                var result = [];
-
-                for ( var i = 0, l = outline.length; i < l; ) {
-
-                    var action = outline[ i ++ ];
-
-                    switch ( action ) {
-
-                        case 'm': // moveTo
-
-                            x = outline[ i ++ ] * scale + offsetX;
-                            y = outline[ i ++ ] * scale + offsetY;
-
-                            path.moveTo( x, y );
-
-                            break;
-
-                        case 'l': // lineTo
-
-                            x = outline[ i ++ ] * scale + offsetX;
-                            y = outline[ i ++ ] * scale + offsetY;
-
-                            path.lineTo( x, y );
-
-                            break;
-
-                        case 'q': // quadraticCurveTo
-
-                            cpx = outline[ i ++ ] * scale + offsetX;
-                            cpy = outline[ i ++ ] * scale + offsetY;
-                            cpx1 = outline[ i ++ ] * scale + offsetX;
-                            cpy1 = outline[ i ++ ] * scale + offsetY;
-
-                            path.quadraticCurveTo( cpx1, cpy1, cpx, cpy );
-
-                            break;
-
-                        case 'b': // bezierCurveTo
-
-                            cpx = outline[ i ++ ] * scale + offsetX;
-                            cpy = outline[ i ++ ] * scale + offsetY;
-                            cpx1 = outline[ i ++ ] * scale + offsetX;
-                            cpy1 = outline[ i ++ ] * scale + offsetY;
-                            cpx2 = outline[ i ++ ] * scale + offsetX;
-                            cpy2 = outline[ i ++ ] * scale + offsetY;
-
-                            path.bezierCurveTo( cpx1, cpy1, cpx2, cpy2, cpx, cpy );
-
-                            break;
-                        case 'z':
-                            // path.moveTo( 0, 0 );
-                            break;
-
-                    }
-                }
-                // console.log(path);
-                // 0-9 9-14 14-31 31-36 36-41 41
-
-            }
-            // path.subPaths = path.subPaths.slice(-1);
-            // add letter-space
-            return { offsetX: glyph.ha * scale * window.controls.letterSpace, path: path };
-
-        }
-
-        var oldTriangulateShape = THREE.ShapeUtils.triangulateShape;
-        THREE.ShapeUtils.triangulateShape = function(cs, holes) {
-            var contours = [cs, ...holes];
-
-            var triangles = triangulate(contours.map(contour => new Float32Array(contour.map(v => [v.x, v.y]).flat())));
-
-            function isEqual(a, b) {
-                return Math.abs(a - b) < 1;
-            }
-
-            // 1. recover vertex index
-            // 2. calculate three vertexes in face
-            var flat_contour = contours.flat();
-            var face = [];
-            var faces = [];
-            for( var i = 0; i < triangles.length; i += 2) {
-                var t1 = triangles[i];
-                var t2 = triangles[i + 1];
-
-                var index = flat_contour.findIndex(v => isEqual(v.x, t1) && isEqual(v.y, t2));
-                if (index < 0) {
-                    console.error("can't find vertex index", t1, t2);
-                } else {
-                    face.push(index);
-                    if (face.length === 3) {
-                        faces.push(face);
-                        face = [];
-                    }
-                }
-            }
-
-            return faces;
-        }
-
-        THREE.ShapePath.prototype.toShapes = function ( isCCW, noHoles ) {
-            function toShapesNoHoles( inSubpaths ) {
-
-                var shapes = [];
-
-                for ( var i = 0, l = inSubpaths.length; i < l; i ++ ) {
-
-                    var tmpPath = inSubpaths[ i ];
-
-                    var tmpShape = new Shape();
-                    tmpShape.curves = tmpPath.curves;
-
-                    shapes.push( tmpShape );
-
-                }
-
-                return shapes;
-
-            }
-
-            function isPointInsidePolygon( inPt, inPolygon ) {
-
-                var polyLen = inPolygon.length;
-
-                // inPt on polygon contour => immediate success    or
-                // toggling of inside/outside at every single! intersection point of an edge
-                //  with the horizontal line through inPt, left of inPt
-                //  not counting lowerY endpoints of edges and whole edges on that line
-                var inside = false;
-                for ( var p = polyLen - 1, q = 0; q < polyLen; p = q ++ ) {
-
-                    var edgeLowPt = inPolygon[ p ];
-                    var edgeHighPt = inPolygon[ q ];
-
-                    var edgeDx = edgeHighPt.x - edgeLowPt.x;
-                    var edgeDy = edgeHighPt.y - edgeLowPt.y;
-
-                    if ( Math.abs( edgeDy ) > Number.EPSILON ) {
-
-                        // not parallel
-                        if ( edgeDy < 0 ) {
-
-                            edgeLowPt = inPolygon[ q ]; edgeDx = - edgeDx;
-                            edgeHighPt = inPolygon[ p ]; edgeDy = - edgeDy;
-
-                        }
-                        if ( ( inPt.y < edgeLowPt.y ) || ( inPt.y > edgeHighPt.y ) ) 		{ continue; }
-
-                        if ( inPt.y === edgeLowPt.y ) {
-
-                            if ( inPt.x === edgeLowPt.x )		{ return	true; }		// inPt is on contour ?
-                            // continue;				// no intersection or edgeLowPt => doesn't count !!!
-
-                        } else {
-
-                            var perpEdge = edgeDy * ( inPt.x - edgeLowPt.x ) - edgeDx * ( inPt.y - edgeLowPt.y );
-                            if ( perpEdge === 0 )				{ return	true; }		// inPt is on contour ?
-                            if ( perpEdge < 0 ) 				{ continue; }
-                            inside = ! inside;		// true intersection left of inPt
-
-                        }
-
-                    } else {
-
-                        // parallel or collinear
-                        if ( inPt.y !== edgeLowPt.y ) 		{ continue; }			// parallel
-                        // edge lies on the same horizontal line as inPt
-                        if ( ( ( edgeHighPt.x <= inPt.x ) && ( inPt.x <= edgeLowPt.x ) ) ||
-                            ( ( edgeLowPt.x <= inPt.x ) && ( inPt.x <= edgeHighPt.x ) ) )		{ return	true; }	// inPt: Point on contour !
-                        // continue;
-
-                    }
-
-                }
-
-                return	inside;
-
-            }
-
-            var isClockWise = THREE.ShapeUtils.isClockWise;
-
-            var subPaths = this.subPaths;
-            if ( subPaths.length === 0 ) { return []; }
-
-            if ( noHoles === true )	{ return	toShapesNoHoles( subPaths ); }
-
-
-            var solid, tmpPath, tmpShape, shapes = [];
-
-            if ( subPaths.length === 1 ) {
-
-                tmpPath = subPaths[ 0 ];
-                tmpShape = new THREE.Shape();
-                tmpShape.curves = tmpPath.curves;
-                shapes.push( tmpShape );
-                return shapes;
-
-            }
-
-            var holesFirst = ! isClockWise( subPaths[ 0 ].getPoints() );
-            holesFirst = isCCW ? ! holesFirst : holesFirst;
-
-            // console.log("Holes first", holesFirst);
-
-            var betterShapeHoles = [];
-            var newShapes = [];
-            var newShapeHoles = [];
-            var mainIdx = 0;
-            var tmpPoints;
-
-            newShapes[ mainIdx ] = undefined;
-            newShapeHoles[ mainIdx ] = [];
-
-            for ( var i = 0, l = subPaths.length; i < l; i ++ ) {
-
-                tmpPath = subPaths[ i ];
-                tmpPoints = tmpPath.getPoints();
-                solid = isClockWise( tmpPoints );
-                solid = isCCW ? ! solid : solid;
-
-                if ( mainIdx == 0 ) {
-                    newShapes[ mainIdx ] = { s: new THREE.Shape(), p: tmpPoints };
-                    newShapes[ mainIdx ].s.curves = tmpPath.curves;
-                    newShapeHoles[ mainIdx ] = [];
-                    mainIdx++;
-                    //console.log('cw', i);
-
-                } else {
-                    newShapeHoles[ 0 ].push( { h: tmpPath, p: tmpPoints[ 0 ] } );
-
-                    //console.log('ccw', i);
-
-                }
-
-            }
-
-            var tmpHoles;
-
-            for ( var i = 0, il = newShapes.length; i < il; i ++ ) {
-
-                tmpShape = newShapes[ i ].s;
-                shapes.push( tmpShape );
-                tmpHoles = newShapeHoles[ i ];
-
-                for ( var j = 0, jl = tmpHoles.length; j < jl; j ++ ) {
-
-                    tmpShape.holes.push( tmpHoles[ j ].h );
-
-                }
-
-            }
-
-            // console.log("shape", shapes);
-
-            return shapes;
-        }
-        
-    </script>
+    <script src="./three.plugin.js"></script>
     <script>
         THREE.Cache.enabled = true;
         var camera, scene, renderer;
         var group, textMesh, textGeo, materials, font;
+        var point_light_lamp;
 
         var width = window.innerWidth,
             height = window.innerHeight,
             fov = 30,
 
             bevelThickness = 2,
-            bevelSize = 0,
+            bevelSize = 5,
             bevelOffset = 0,
-            bevelSegments = 3,
+            bevelSegments = 1,
             bevelEnabled = true,
 
             curveSegments = 4,
 
-            textHeight = 10,
-            size = 120;
+            textHeight = 20,
+            size = 150;
 
         var targetRotation = 0;
         var targetRotationOnMouseDown = 0;
@@ -432,14 +103,18 @@
 
         var controls = {
             size: size,
-            frontColor: "#e81818",
-            sideColor: '#FFFFFF',
+            frontColor: "#ffffff",
+            sideColor: '#ffffff',
             letterSpace: 1,
             lineHeight: 1,
 
             bevelEnabled: bevelEnabled,
             bevelOffset: bevelOffset,
             bevelSegments: bevelSegments,
+            bevelThickness: bevelThickness,
+            bevelSize: bevelSize,
+
+            curveSegments: curveSegments,
 
             text: '图怪兽',
             fontFamily: '只有图怪兽三个字',
@@ -448,25 +123,27 @@
             // material-front
             frontTextureEnabled: false,
             frontOpacity: 1,
+            frontWireframe: false,
 
             // material-side
             sideTextureEnabled: false,
             sideOpacity: 1,
+            sideWireframe: false,
 
             // light
-            directional_light_enabled: true,
+            directional_light_enabled: false,
             directional_light_color: 0xffffff,
-            directional_light_intensity: 1.33,
+            directional_light_intensity: 0.125,
             directional_light_x: 0,
             directional_light_y: 0,
             directional_light_z: 1,
 
             point_light_enabled: true,
-            point_light_color: 0xffffff,
+            point_light_color: 0x2194CE,
             point_light_intensity: 1.5,
             point_light_x: 0,
-            point_light_y: 300,
-            point_light_z: 90,
+            point_light_y: 0,
+            point_light_z: 50,
         };
 
         function init() {
@@ -478,7 +155,7 @@
             // SCENE
             scene = new THREE.Scene();
             scene.background = new THREE.Color( 0xFFFFFF );
-            scene.fog = new THREE.Fog( 0xcc0000, 1, 1000 );
+            // scene.fog = new THREE.Fog( 0xcc0000, 1, 1000 );
 
             // LIGHTS
             var dirLight = new THREE.DirectionalLight( controls.directional_light_color, controls.directional_light_intensity );
@@ -491,8 +168,15 @@
             pointLight.visible = controls.point_light_enabled;
             scene.add( pointLight );
 
-            var ambientLight = new THREE.AmbientLight( '#ffffff', 1);
-            this.scene.add( ambientLight );
+            // point light position
+            var lightGeometry = new THREE.SphereBufferGeometry( 12, 8, 8 );
+            var lightMaterial = new THREE.MeshBasicMaterial( {color: 0xffff00, wireframe: true} );
+            point_light_lamp = new THREE.Mesh( lightGeometry, lightMaterial );
+            point_light_lamp.position.set( controls.point_light_x, controls.point_light_y, controls.point_light_z );
+            scene.add( point_light_lamp );
+
+            // var ambientLight = new THREE.AmbientLight( '#ffffff', 1);
+            // this.scene.add( ambientLight );
 
             // GROUP
             group = new THREE.Group();
@@ -522,7 +206,12 @@
             var c_mesh_lineHeight = gui.add(controls, 'lineHeight', 0.5, 3).step(0.1).onChange(refreshText);
             var c_mesh_fontFamily = gui.add(controls, 'fontFamily', font_urls.map(v => v.label)).onChange(loadFont);
             var c_meth_depth = gui.add(controls, 'depth', 0, 50).step(1).onChange(refreshText);
+            
             var c_mesh_bevelEnabled = gui.add(controls, 'bevelEnabled').onChange(refreshText);
+            var c_mesh_bevelThickness = gui.add(controls, 'bevelThickness').onChange(refreshText);
+            var c_mesh_bevelSize = gui.add(controls, 'bevelSize').onChange(refreshText);
+            var c_mesh_bevelOffset = gui.add(controls, 'bevelOffset').onChange(refreshText);
+            var c_mesh_bevelSegments = gui.add(controls, 'bevelSegments', 1).step(1).onChange(refreshText);
 
             // LIGHT CONFIG
             var directional_light_folder = gui.addFolder('directional_light(平行光)');
@@ -554,15 +243,19 @@
             });
             point_light_folder.addColor(controls, 'point_light_color', 0,100).onChange(function(v) {
                 point_light.color.setHex( v );
+                point_light_lamp.color.setHex(v);
             });
             point_light_folder.add(controls, 'point_light_x').step(1).onChange(function(v) {
                 point_light.position.setX(v);
+                point_light_lamp.position.setX(v);
             });
             point_light_folder.add(controls, 'point_light_y').step(1).onChange(function(v) {
                 point_light.position.setY(v);
+                point_light_lamp.position.setY(v);
             });
             point_light_folder.add(controls, 'point_light_z').step(1).onChange(function(v) {
                 point_light.position.setZ(v);
+                point_light_lamp.position.setZ(v);
             });
             point_light_folder.add(controls, 'point_light_intensity').onChange(function(v) {
                 point_light.intensity = v;
@@ -574,12 +267,14 @@
             front_material_folder.addColor(controls, 'frontColor', 0,100).onChange(refreshText);
             front_material_folder.add(controls, 'frontTextureEnabled').onChange(refreshText);
             front_material_folder.add(controls, 'frontOpacity', 0, 1).step(0.1).onChange(refreshText);
+            front_material_folder.add(controls, 'frontWireframe').onChange(refreshText);
             // front_material_folder.open();
 
             var side_material_folder = gui.addFolder('side_matertial(控制文字侧面颜色)');
             side_material_folder.addColor(controls, 'sideColor', 0, 100).onChange(refreshText);
             side_material_folder.add(controls, 'sideTextureEnabled').onChange(refreshText);
             side_material_folder.add(controls, 'sideOpacity', 0, 1).step(0.1).onChange(refreshText);
+            side_material_folder.add(controls, 'sideWireframe').onChange(refreshText);
             // side_material_folder.open();
         }
 
@@ -655,13 +350,13 @@
                 size: controls.size,
                 height: controls.depth,
 
-                bevelThickness: bevelThickness,
-                bevelSize: bevelSize,
+                bevelThickness: controls.bevelThickness,
+                bevelSize: controls.bevelSize,
                 bevelEnabled: controls.bevelEnabled,
                 bevelOffset: controls.bevelOffset,
                 bevelSegments: controls.bevelSegments,
 
-                curveSegments: curveSegments,
+                curveSegments: controls.curveSegments,
             });
 
             console.timeEnd('create TextBufferGeometry');
@@ -687,6 +382,9 @@
                     map: frontTexture,
                 }) : new THREE.MeshPhongMaterial( {
                     color: parseInt(frontColor, 16),
+                    shininess: 99,
+                    specular: 0xFFFFFF,
+                    wireframe: controls.frontWireframe,
                 }), // front
                 controls.sideTextureEnabled ? new THREE.MeshPhongMaterial( {
                     map: frontTexture,
@@ -694,6 +392,9 @@
                 }) : new THREE.MeshPhongMaterial( {
                     color: parseInt(sideColor, 16),
                     side: THREE.DoubleSide,
+                    shininess: 99,
+                    specular: 0xFFFFFF,
+                    wireframe: controls.sideWireframe,
                 }), // side
             ];
             materials[0].opacity = controls.frontOpacity;
