@@ -377,14 +377,112 @@
             frontTexture.wrapS = frontTexture.wrapT = THREE.RepeatWrapping;
             frontTexture.repeat.set(0.05, 0.05);
 
+            var f_colorCenter = 0.5;
             materials = [
+                // new THREE.ShaderMaterial({
+                //     uniforms: {
+                //         color1: {
+                //             value: new THREE.Color("red")
+                //         },
+                //         color2: {
+                //             value: new THREE.Color("yellow")
+                //         },
+                //         bboxMin: {
+                //             value: textGeo.boundingBox.min
+                //         },
+                //         bboxMax: {
+                //             value: textGeo.boundingBox.max
+                //         },
+                //         f_colorCenter: {
+                //             value: f_colorCenter
+                //         }
+                //     },
+                //     vertexShader: `
+                //         uniform vec3 bboxMin;
+                //         uniform vec3 bboxMax;
+                    
+                //         varying float f_mixa;
+
+                //         uniform float f_colorCenter;
+
+                //         void main() {
+                //             float p = (position.x - bboxMin.x) / (bboxMax.x - bboxMin.x);
+                //             if (p <= f_colorCenter) {
+                //                 f_mixa = p / f_colorCenter / 2.0;
+                //             } else {
+                //                 f_mixa = (p - f_colorCenter) / (1.0 - f_colorCenter) / 2.0 + 0.5;
+                //             }
+                //             gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                //         }
+                //     `,
+                //     fragmentShader: `
+                //         uniform vec3 color1;
+                //         uniform vec3 color2;
+                    
+                //         varying float f_mixa;
+                        
+                //         void main() {
+                //             gl_FragColor = vec4(mix(color1, color2, f_mixa), 1.0);
+                //         }
+                //     `,
+                //     // wireframe: true
+                // }),
+                // new THREE.ShaderMaterial({
+                //     uniforms: {
+                //         color1: {
+                //             value: new THREE.Color("black")
+                //         },
+                //         color2: {
+                //             value: new THREE.Color("black")
+                //         },
+                //         bboxMin: {
+                //             value: textGeo.boundingBox.min
+                //         },
+                //         bboxMax: {
+                //             value: textGeo.boundingBox.max
+                //         },
+                //         f_colorCenter: {
+                //             value: f_colorCenter
+                //         }
+                //     },
+                //     vertexShader: `
+                //         uniform vec3 bboxMin;
+                //         uniform vec3 bboxMax;
+                    
+                //         varying float f_mixa;
+
+                //         uniform float f_colorCenter;
+
+                //         void main() {
+                //             float p = (position.x - bboxMin.x) / (bboxMax.x - bboxMin.x);
+                //             if (p <= f_colorCenter) {
+                //                 f_mixa = p / f_colorCenter / 2.0;
+                //             } else {
+                //                 f_mixa = (p - f_colorCenter) / (1.0 - f_colorCenter) / 2.0 + 0.5;
+                //             }
+                //             gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                //         }
+                //     `,
+                //     fragmentShader: `
+                //         uniform vec3 color1;
+                //         uniform vec3 color2;
+                    
+                //         varying float f_mixa;
+                        
+                //         void main() {
+                //             gl_FragColor = vec4(mix(color1, color2, f_mixa), 1.0);
+                //         }
+                //     `,
+                //     // wireframe: true
+                // }),
                 controls.frontTextureEnabled ? new THREE.MeshPhongMaterial( {
                     map: frontTexture,
                 }) : new THREE.MeshPhongMaterial( {
                     color: parseInt(frontColor, 16),
                     shininess: 99,
-                    specular: 0xFFFFFF,
+                    specular: parseInt(frontColor, 16),
                     wireframe: controls.frontWireframe,
+                    // emissive: 0xFF0000,
                 }), // front
                 controls.sideTextureEnabled ? new THREE.MeshPhongMaterial( {
                     map: frontTexture,
@@ -393,14 +491,20 @@
                     color: parseInt(sideColor, 16),
                     side: THREE.DoubleSide,
                     shininess: 99,
-                    specular: 0xFFFFFF,
+                    specular: parseInt(sideColor, 16),
                     wireframe: controls.sideWireframe,
+                    // emissive: 0xFF0000,
                 }), // side
             ];
             materials[0].opacity = controls.frontOpacity;
             materials[1].opacity = controls.sideOpacity
 
             textMesh = new THREE.Mesh( textGeo, materials );
+            // textMesh = new THREE.Points(textGeo, new THREE.PointsMaterial({
+            //     size: 2,
+            //     // vertexColors: true,
+            //     color: 0xff0000,
+            // }));
 
             group.add( textMesh );
         }
