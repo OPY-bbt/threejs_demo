@@ -65,9 +65,9 @@
         // geometry.computeFaceNormals();
 
         var material = new THREE.MeshBasicMaterial( {
-            // color: 0xffff00,
+            color: 0xffff00,
             wireframe : false,
-            map: new THREE.TextureLoader().load('../wall.jpg'),
+            // map: new THREE.TextureLoader().load('../wall.jpg'),
         } );
         var cube = new THREE.Mesh( geometry, material );
         scene.add( cube );
