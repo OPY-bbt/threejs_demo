@@ -379,7 +379,7 @@
 
             var frontTexture = new THREE.TextureLoader().load('./lava.jpg');
             frontTexture.wrapS = frontTexture.wrapT = THREE.RepeatWrapping;
-            frontTexture.repeat.set(0.05, 0.05);
+            frontTexture.repeat.set(1, 1);
 
             var f_colorCenter = 0.2;
             var degree = 45;
@@ -397,166 +397,166 @@
             const c = Math.cos(radian);
             const s = Math.sin(radian);
             materials = [
-                new THREE.ShaderMaterial({
-                    uniforms: {
-                        color1: {
-                            value: new THREE.Color("red")
-                        },
-                        color2: {
-                            value: new THREE.Color("yellow")
-                        },
-                        bboxMin: {
-                            value: textGeo.boundingBox.min
-                        },
-                        bboxMax: {
-                            value: textGeo.boundingBox.max
-                        },
-                        f_colorCenter: {
-                            value: f_colorCenter
-                        },
-                        c: {
-                            value: c,
-                        },
-                        s: {
-                            value: s,
-                        },
-                        gRect_h: {
-                            value: gRect_h,
-                        }
-                    },
-                    vertexShader: `
-                        uniform vec3 bboxMin;
-                        uniform vec3 bboxMax;
+                // new THREE.ShaderMaterial({
+                //     uniforms: {
+                //         color1: {
+                //             value: new THREE.Color("red")
+                //         },
+                //         color2: {
+                //             value: new THREE.Color("yellow")
+                //         },
+                //         bboxMin: {
+                //             value: textGeo.boundingBox.min
+                //         },
+                //         bboxMax: {
+                //             value: textGeo.boundingBox.max
+                //         },
+                //         f_colorCenter: {
+                //             value: f_colorCenter
+                //         },
+                //         c: {
+                //             value: c,
+                //         },
+                //         s: {
+                //             value: s,
+                //         },
+                //         gRect_h: {
+                //             value: gRect_h,
+                //         }
+                //     },
+                //     vertexShader: `
+                //         uniform vec3 bboxMin;
+                //         uniform vec3 bboxMax;
 
-                        uniform float c;
-                        uniform float s;
-                        uniform float gRect_h;
+                //         uniform float c;
+                //         uniform float s;
+                //         uniform float gRect_h;
                     
-                        varying float f_mixa;
+                //         varying float f_mixa;
 
-                        uniform float f_colorCenter;
+                //         uniform float f_colorCenter;
 
-                        void main() {
-                            // 顶点着色器里的坐标轴方向和canvas不一样，y上为正
+                //         void main() {
+                //             // 顶点着色器里的坐标轴方向和canvas不一样，y上为正
 
-                            float rx = position.x;
-                            float ry = position.y;
+                //             float rx = position.x;
+                //             float ry = position.y;
 
-                            float y = s * rx + c * ry;
-                            f_mixa = abs(gRect_h * 0.5 - y) / gRect_h;
+                //             float y = s * rx + c * ry;
+                //             f_mixa = abs(gRect_h * 0.5 - y) / gRect_h;
 
-                            // float p = (position.x - bboxMin.x) / (bboxMax.x - bboxMin.x);
-                            // if (p <= f_colorCenter) {
-                            //     f_mixa = p / f_colorCenter / 2.0;
-                            // } else {
-                            //     f_mixa = (p - f_colorCenter) / (1.0 - f_colorCenter) / 2.0 + 0.5;
-                            // }
-                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-                        }
-                    `,
-                    fragmentShader: `
-                        uniform vec3 color1;
-                        uniform vec3 color2;
+                //             // float p = (position.x - bboxMin.x) / (bboxMax.x - bboxMin.x);
+                //             // if (p <= f_colorCenter) {
+                //             //     f_mixa = p / f_colorCenter / 2.0;
+                //             // } else {
+                //             //     f_mixa = (p - f_colorCenter) / (1.0 - f_colorCenter) / 2.0 + 0.5;
+                //             // }
+                //             gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                //         }
+                //     `,
+                //     fragmentShader: `
+                //         uniform vec3 color1;
+                //         uniform vec3 color2;
                     
-                        varying float f_mixa;
+                //         varying float f_mixa;
                         
-                        void main() {
-                            gl_FragColor = vec4(mix(color1, color2, f_mixa), 1.0);
-                        }
-                    `,
-                    // wireframe: true
-                }),
-                new THREE.ShaderMaterial({
-                    uniforms: {
-                        color1: {
-                            value: new THREE.Color("black")
-                        },
-                        color2: {
-                            value: new THREE.Color("black")
-                        },
-                        bboxMin: {
-                            value: textGeo.boundingBox.min
-                        },
-                        bboxMax: {
-                            value: textGeo.boundingBox.max
-                        },
-                        f_colorCenter: {
-                            value: f_colorCenter
-                        },
-                        c: {
-                            value: c,
-                        },
-                        s: {
-                            value: s,
-                        },
-                        gRect_h: {
-                            value: gRect_h,
-                        },
-                    },
-                    vertexShader: `
-                        uniform vec3 bboxMin;
-                        uniform vec3 bboxMax;
+                //         void main() {
+                //             gl_FragColor = vec4(mix(color1, color2, f_mixa), 1.0);
+                //         }
+                //     `,
+                //     // wireframe: true
+                // }),
+                // new THREE.ShaderMaterial({
+                //     uniforms: {
+                //         color1: {
+                //             value: new THREE.Color("black")
+                //         },
+                //         color2: {
+                //             value: new THREE.Color("black")
+                //         },
+                //         bboxMin: {
+                //             value: textGeo.boundingBox.min
+                //         },
+                //         bboxMax: {
+                //             value: textGeo.boundingBox.max
+                //         },
+                //         f_colorCenter: {
+                //             value: f_colorCenter
+                //         },
+                //         c: {
+                //             value: c,
+                //         },
+                //         s: {
+                //             value: s,
+                //         },
+                //         gRect_h: {
+                //             value: gRect_h,
+                //         },
+                //     },
+                //     vertexShader: `
+                //         uniform vec3 bboxMin;
+                //         uniform vec3 bboxMax;
                         
-                        uniform float c;
-                        uniform float s;
-                        uniform float gRect_h;
+                //         uniform float c;
+                //         uniform float s;
+                //         uniform float gRect_h;
                     
-                        varying float f_mixa;
+                //         varying float f_mixa;
 
-                        uniform float f_colorCenter;
+                //         uniform float f_colorCenter;
 
-                        void main() {
-                            float v_x = position.x - bboxMin.x;
-                            float v_y = position.y - bboxMin.y;
-                            float w = bboxMax.x - bboxMin.x;
-                            float h = bboxMax.y - bboxMin.y;
+                //         void main() {
+                //             float v_x = position.x - bboxMin.x;
+                //             float v_y = position.y - bboxMin.y;
+                //             float w = bboxMax.x - bboxMin.x;
+                //             float h = bboxMax.y - bboxMin.y;
 
-                            float rx = v_x - w * 0.5;
-                            float ry = -(v_y - h * 0.5);
+                //             float rx = v_x - w * 0.5;
+                //             float ry = -(v_y - h * 0.5);
 
-                            float y = -s * rx + c * ry;
-                            f_mixa = (gRect_h * 0.5 - y) / gRect_h;
+                //             float y = -s * rx + c * ry;
+                //             f_mixa = (gRect_h * 0.5 - y) / gRect_h;
 
 
-                            // float p = (position.x - bboxMin.x) / (bboxMax.x - bboxMin.x);
-                            // if (p <= f_colorCenter) {
-                            //     f_mixa = p / f_colorCenter / 2.0;
-                            // } else {
-                            //     f_mixa = (p - f_colorCenter) / (1.0 - f_colorCenter) / 2.0 + 0.5;
-                            // }
-                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-                        }
-                    `,
-                    fragmentShader: `
-                        uniform vec3 color1;
-                        uniform vec3 color2;
+                //             // float p = (position.x - bboxMin.x) / (bboxMax.x - bboxMin.x);
+                //             // if (p <= f_colorCenter) {
+                //             //     f_mixa = p / f_colorCenter / 2.0;
+                //             // } else {
+                //             //     f_mixa = (p - f_colorCenter) / (1.0 - f_colorCenter) / 2.0 + 0.5;
+                //             // }
+                //             gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+                //         }
+                //     `,
+                //     fragmentShader: `
+                //         uniform vec3 color1;
+                //         uniform vec3 color2;
                     
-                        varying float f_mixa;
+                //         varying float f_mixa;
                         
-                        void main() {
-                            gl_FragColor = vec4(mix(color1, color2, f_mixa), 1.0);
-                        }
-                    `,
-                    // wireframe: true
-                }),
-                // controls.frontTextureEnabled ? new THREE.MeshPhongMaterial( {
-                //     map: frontTexture,
-                // }) : new THREE.MeshPhongMaterial( {
-                //     color: parseInt(frontColor, 16),
-                //     shininess: 99,
-                //     specular: parseInt(frontColor, 16),
-                //     wireframe: controls.frontWireframe,
-                //     // emissive: 0xFF0000,
-                // }), // front
-                // controls.sideTextureEnabled ? new THREE.MeshPhongMaterial( {
-                //     map: frontTexture,
-                // }) : new THREE.MeshPhongMaterial( {
-                //     color: parseInt(sideColor, 16),
-                //     shininess: 99,
-                //     specular: parseInt(sideColor, 16),
-                //     wireframe: controls.sideWireframe,
-                //     // emissive: 0xFF0000,
-                // }), // side
+                //         void main() {
+                //             gl_FragColor = vec4(mix(color1, color2, f_mixa), 1.0);
+                //         }
+                //     `,
+                //     // wireframe: true
+                // }),
+                controls.frontTextureEnabled ? new THREE.MeshPhongMaterial( {
+                    map: frontTexture,
+                }) : new THREE.MeshPhongMaterial( {
+                    color: parseInt(frontColor, 16),
+                    shininess: 99,
+                    specular: parseInt(frontColor, 16),
+                    // wireframe: controls.frontWireframe,
+                    // emissive: 0xFF0000,
+                }), // front
+                controls.sideTextureEnabled ? new THREE.MeshPhongMaterial( {
+                    map: frontTexture,
+                }) : new THREE.MeshPhongMaterial( {
+                    color: parseInt(sideColor, 16),
+                    shininess: 99,
+                    specular: parseInt(sideColor, 16),
+                    // wireframe: controls.sideWireframe,
+                    // emissive: 0xFF0000,
+                }), // side
             ];
             materials[0].opacity = controls.frontOpacity;
             materials[1].opacity = controls.sideOpacity;
