@@ -1260,6 +1260,7 @@
           , f = new THREE.BoxBufferGeometry(.75, 1, .75);
         f.translate(0, .5, 0),
           f.rotateX(-Math.PI / 2);
+        // 被隐藏的立方体
         const m = new THREE.InstancedMesh(f, d, t);
         this.mesh.add(m);
         const y = new THREE.MeshBasicMaterial({
@@ -1295,6 +1296,7 @@
         for (let U = 0; U < t; U++)
           x.push(U),
             b.push(U);
+        // 点下的圆柱体
         const w = new THREE.CylinderBufferGeometry(u * h, u * h, 1, 6, 1, !1);
         w.setAttribute("index", new THREE.InstancedBufferAttribute(new Float32Array(x), 1)),
           w.translate(0, .5, 0),
