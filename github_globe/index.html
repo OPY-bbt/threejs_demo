@@ -287,7 +287,7 @@
         this.initScene();
       }
       initBase() {
-        const {width: w, height: h} = container.getBoundingClientRect();
+        const { width: w, height: h } = container.getBoundingClientRect();
         this.scene = new THREE.Scene();
         (this.camera = new THREE.PerspectiveCamera(20, w / h, 170, 260)),
           (this.renderer = new THREE.WebGLRenderer({
@@ -325,9 +325,9 @@
           this.scene.add(this.parentContainer);
 
         // 光环
-        (this.haloContainer = new THREE.Group()),
-          (this.haloContainer.name = "haloContainer"),
-          this.scene.add(this.haloContainer);
+        (this.haloContainer = new THREE.Group());
+        (this.haloContainer.name = "haloContainer");
+        this.scene.add(this.haloContainer);
 
         (this.container = new THREE.Group()),
           (this.container.name = "container"),
@@ -460,8 +460,8 @@
       }
 
       positionContainer() {
-        const {isMobile: t, parentNode: e} = bl,
-          {height: n} = e.getBoundingClientRect(),
+        const { isMobile: t, parentNode: e } = bl,
+          { height: n } = e.getBoundingClientRect(),
           i = (850 / n) * 1;
         (this.containerScale = i),
           t
@@ -710,7 +710,7 @@
           this.vaultIsHighlighted = !1;
         const t = Rl(78.14, 15.26, this.radius)
           , e = Rl(78.14, 15.26, this.radius + 5)
-          , {basePath: n, imagePath: i} = bl
+          , { basePath: n, imagePath: i } = bl
           , r = `./flag.obj`;
         (new THREE.OBJLoader).load(r, (n => {
           n.position.set(t.x, t.y, t.z),
@@ -738,7 +738,7 @@
 
       buildWorldGeometry() {
         // 根据颜色渲染陆地和海洋
-        const {assets: {textures: {worldMap: t}}} = bl
+        const { assets: { textures: { worldMap: t } } } = bl
           , e = new THREE.Object3D
           , n = this.getImageData(t.image)
           , i = []
@@ -855,8 +855,8 @@
           this.init()
       }
       init() {
-        const {data: t, radius: e = 1, camera: n, maxAmount: i = t.length, maxIndexDistance: r, visibleIndex: s, colors: o} = this.props
-          , {parentNode: c, lineWidth: h, pixelRatio: u} = bl;
+        const { data: t, radius: e = 1, camera: n, maxAmount: i = t.length, maxIndexDistance: r, visibleIndex: s, colors: o } = this.props
+          , { parentNode: c, lineWidth: h, pixelRatio: u } = bl;
         this.mesh = new THREE.Group,
           this.isAnimating = [],
           this.animatingLandingsOut = [],
@@ -890,7 +890,7 @@
             visible: !1
           });
         for (let x = 0; x < i; x++) {
-          const {gop: n, gm: i} = t[x]
+          const { gop: n, gm: i } = t[x]
             , r = n
             , s = i
             , o = Rl(r.lat, r.lon, e)
@@ -937,7 +937,7 @@
               this.lineHitMeshes.push(L)
           }
         }
-        const {width: m, height: y} = c.getBoundingClientRect()
+        const { width: m, height: y } = c.getBoundingClientRect()
       }
       resetHighlight() {
         null != this.highlightedMesh && (this.highlightedMesh.material = this.tubeMaterial,
@@ -1093,7 +1093,7 @@
         // _l.on(yl, this.handleResume)
       }
       addListeners() {
-        const {domElement: t} = this.props;
+        const { domElement: t } = this.props;
         this.removeListeners(),
           t.addEventListener("mousedown", this.handleMouseDown, !1),
           t.addEventListener("mousemove", this.handleMouseMove, !1),
@@ -1106,7 +1106,7 @@
           t.addEventListener("touchcancel", this.handleTouchEnd, !1)
       }
       removeListeners() {
-        const {domElement: t} = this.props;
+        const { domElement: t } = this.props;
         t.removeEventListener("mousedown", this.handleMouseDown),
           t.removeEventListener("mousemove", this.handleMouseMove),
           t.removeEventListener("mouseup", this.handleMouseUp),
@@ -1118,13 +1118,13 @@
           t.removeEventListener("touchcancel", this.handleTouchEnd)
       }
       setMouse(t) {
-        const {width: e, height: n} = bl.parentNode.getBoundingClientRect();
+        const { width: e, height: n } = bl.parentNode.getBoundingClientRect();
         this.mouse.x = t.clientX / e * 2 - 1,
           this.mouse.y = -t.clientY / n * 2 + 1
       }
       setDragging(t) {
         this.dragging = t;
-        const {setDraggingCallback: e} = this.props;
+        const { setDraggingCallback: e } = this.props;
         e && "function" == typeof e && e(t)
       }
       handlePause() {
@@ -1162,7 +1162,7 @@
       update(t = .01) {
         let e = 0
           , n = 0;
-        const {object: i, objectContainer: r, rotateSpeed: s, autoRotationSpeed: o, easing: c = .1, maxRotationX: h = .3} = this.props;
+        const { object: i, objectContainer: r, rotateSpeed: s, autoRotationSpeed: o, easing: c = .1, maxRotationX: h = .3 } = this.props;
         this.dragging && (e = this.mouse.x - this.lastMouse.x,
           n = this.mouse.y - this.lastMouse.y,
           this.target.y = Nl(this.target.y - n, -h, .6 * h)),
@@ -1250,8 +1250,8 @@
           this.init()
       }
       init() {
-        const {maxAmount: t = 1e3, data: e = [], radius: n = 1, camera: i, maxIndexDistance: r, visibleIndex: s, colors: {openPrColor: o, openPrParticleColor: c}} = this.props
-          , {pixelRatio: h, spikeRadius: u = .06} = bl;
+        const { maxAmount: t = 1e3, data: e = [], radius: n = 1, camera: i, maxIndexDistance: r, visibleIndex: s, colors: { openPrColor: o, openPrParticleColor: c } } = this.props
+          , { pixelRatio: h, spikeRadius: u = .06 } = bl;
         this.mesh = new THREE.Group;
         const d = new THREE.MeshBasicMaterial({
           color: 65280,
@@ -1309,11 +1309,11 @@
           , A = new THREE.Color(c)
           , L = new THREE.Group
           , P = this.getDensities()
-          , {densityValues: C, minDensity: R, maxDensity: I} = P;
+          , { densityValues: C, minDensity: R, maxDensity: I } = P;
         let D = 0;
         for (let U = 0; U < t; U++) {
           const t = e[U]
-            , {gop: i} = t
+            , { gop: i } = t
             , r = i;
           Rl(r.lat, r.lon, n, L.position);
           const s = C[D++];
@@ -1368,13 +1368,13 @@
           this.particles.renderOrder = 4
       }
       getDensities() {
-        const {data: t, maxAmount: e = 1e3, radius: n} = this.props
+        const { data: t, maxAmount: e = 1e3, radius: n } = this.props
           , i = new THREE.Vector3
           , r = []
           , s = [];
         for (let h = 0; h < e; h++) {
           const e = t[h]
-            , {gop: o} = e
+            , { gop: o } = e
             , c = o;
           c && c.lat && c.lon && (Rl(c.lat, c.lon, n, i),
             r.push((new THREE.Vector3).copy(i)),
@@ -1397,7 +1397,7 @@
       }
       update(t) {
         if (this.spikeUniforms && this.particleUniforms) {
-          const {maxAmount: e, maxIndexDistance: n} = this.props;
+          const { maxAmount: e, maxIndexDistance: n } = this.props;
           this.spikeUniforms && (this.spikeUniforms.visibleIndex.value = t),
             this.particleUniforms && (this.particleUniforms.visibleIndex.value = t);
           const i = Nl(t - n | 0, 0, e)
