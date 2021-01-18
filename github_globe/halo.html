@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <script src="https://unpkg.com/three@0.124.0/build/three.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+  <style>
+    html,
+    body {
+      margin: 0;
+      background-color: #040d21;
+    }
+
+    #container {
+      width: 704px;
+      height: 704px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    svg {
+      display: block;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+  <script type="shader" id="vertexShader">
+    #define GLSLIFY 1
+    uniform vec3 viewVector;
+    uniform float c;
+    uniform float p;
+    varying float intensity;
+    void main() 
+    {
+      vec3 vNormal = normalize( normalMatrix * normal );
+      vec3 vNormel = normalize( normalMatrix * viewVector );
+      intensity = pow( c - dot(vNormal, vNormel), p );
+      
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  </script>
+
+  <script type="shader" id="fragmentShader">
+    #define GLSLIFY 1
+    uniform vec3 glowColor;
+    varying float intensity;
+    void main() 
+    {
+      vec3 glow = glowColor * intensity;
+      gl_FragColor = vec4( glow, 1.0 );
+    }
+  </script>
+  <script>
+    const container = document.querySelector("#container");
+    const { width: w, height: h } = container.getBoundingClientRect();
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({
+      powerPreference: "high-performance",
+      alpha: !1,
+      preserveDrawingBuffer: !1,
+      frame: true,
+    });
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.setSize(w, h);
+    renderer.setClearColor(265505, 1);
+    container.appendChild(renderer.domElement);
+
+    // 光环
+    const haloContainer = new THREE.Group();
+    haloContainer.name = "haloContainer";
+    scene.add(haloContainer);
+
+    const s = new THREE.Mesh(new THREE.SphereBufferGeometry(5, 45, 45), new THREE.ShaderMaterial({
+      uniforms: {
+        c: {
+          type: "f",
+          value: .7
+        },
+        p: {
+          type: "f",
+          value: 15
+        },
+        glowColor: {
+          type: "c",
+          value: new THREE.Color(1844322)
+        },
+        viewVector: {
+          type: "v3",
+          value: new THREE.Vector3(0, 0, 220)
+        }
+      },
+      vertexShader: document.getElementById('vertexShader').textContent,
+      fragmentShader: document.getElementById('fragmentShader').textContent,
+      side: 1,
+      blending: 2,
+      transparent: !0,
+      // wireframe: true,
+    }));
+    s.scale.multiplyScalar(1.15);
+    s.rotateX(.03 * Math.PI);
+    s.rotateY(.03 * Math.PI);
+    s.renderOrder = 3;
+    haloContainer.add(s);
+
+    const scale = (850 / 704) * 1;
+    haloContainer.scale.set(scale, scale, scale);
+    haloContainer.position.set(0, 0, -10);
+
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+
+    camera.position.z = 15;
+
+    const animate = function () {
+      requestAnimationFrame(animate);
+
+      cube.rotation.x += 0.01;
+      cube.rotation.y += 0.01;
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+  </script>
+</body>
+
+</html>

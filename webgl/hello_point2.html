@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="./libs/webgl-utils.js"></script>
+  <script src="./libs/webgl-debug.js"></script>
+  <script src="./libs/cuon-utils.js"></script>
+</head>
+
+<body>
+  <canvas></canvas>
+  <script>
+
+    var canvas = document.body.querySelector('canvas');
+    var gl = getWebGLContext(canvas);
+
+    var VSHADER_SOURCE = `
+      attribute vec4 a_Position;
+      void main() {
+        gl_Position = a_Position;
+        gl_PointSize = 10.0;
+      }
+    `;
+
+    var FSHADER_SOURCE = `
+      void main() {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+      }
+    `;
+
+    initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
+
+    // 获取attribute存储的位置
+    var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+
+    if (a_Position < 0) {
+      console.error(a_Position);
+    }
+
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // gl.vertexAttrib3fv(a_Position, new Float32Array([0, 0, 0]));
+    gl.vertexAttrib3f(a_Position, 0, 0, 0);
+    gl.drawArrays(gl.POINTS, 0, 1);
+
+    const g_points = [];
+    canvas.onmousedown = function (e) {
+      const ex = e.clientX - 8;
+      const ey = e.clientY - 8;
+
+      const w = 300;
+      const h = 150;
+
+      const x = (ex / 300) * 2 - 1;
+      const y = 1 - (ey / 150) * 2;
+
+      g_points.push([x, y]);
+
+
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      for (let i = 0; i < g_points.length; i++) {
+        gl.vertexAttrib2f(a_Position, g_points[i][0], g_points[i][1]);
+        gl.drawArrays(gl.POINTS, 0, 1);
+      }
+    }
+  </script>
+</body>
+
+</html>
