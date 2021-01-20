@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://d3js.org/d3.v5.js"></script>
+</head>
+<body>
+    <script>
+        var dataset = [50, 43, 120, 87, 99, 167, 142];
+        var w = 400;
+        var h = 400;
+
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+
+        var padding = {
+            top: 20,
+            right: 20,
+            bottom: 20,
+            left: 20,
+        };
+
+        var rectStep = 35;
+        var rectWidth = 30;
+
+        function draw() {
+            var updateRect = svg.selectAll("rect")
+                .data(dataset);
+            updateRect.attr("x", function(d, i) {
+                return padding.left + i * rectStep;
+            })
+            .attr("y", function(d) {
+                return h - padding.bottom - d;
+            })
+            .attr("width", rectWidth)
+            .attr("height", function(d) {
+                return d;
+            });
+
+            var enterRect = updateRect.enter();
+            enterRect.append("rect").attr("fill", "steelblue")
+                .attr("x", function(d, i) {
+                    return padding.left + i * rectStep;
+                })
+                .attr("y", function(d) {
+                    return h - padding.bottom - d;
+                })
+                .attr("width", rectWidth)
+                .attr("height", function(d) {
+                    return d;
+                });
+            var exitRect = updateRect.exit();
+
+            var updateText = svg.selectAll("text")
+                .data(dataset);
+            updateText.attr("x", function(d, i) {
+                return padding.left + i * rectStep;
+            })
+            .attr("y", function(d) {
+                return h - padding.bottom - d;
+            })
+            .attr("dx", rectWidth / 2)
+            .attr("dy", "1em")
+            .text(d => d);
+
+            var enterText = updateText.enter();
+            enterText.append("text").attr("fill", "white")
+            .attr("font-size", "14px")
+            .attr("text-anchor", "middle")
+            .attr("x", function(d, i) {
+                return padding.left + i * rectStep;
+            })
+            .attr("y", function(d) {
+                return h - padding.bottom - d;
+            })
+            .attr("dx", rectWidth / 2)
+            .attr("dy", "1em")
+            .text(d => d);
+            var exitText = updateText.exit();
+        }
+        draw();
+
+        setTimeout(() => {
+            // dataset = dataset.map(i => i + 1);
+            dataset.sort(d3.ascending);
+            // dataset.push(100);
+            draw();
+        }, 1000);
+    </script>
+</body>
+</html>

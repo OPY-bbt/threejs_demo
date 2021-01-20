@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://d3js.org/d3.v5.js"></script>
+  <script src="https://dagrejs.github.io/project/dagre-d3/latest/dagre-d3.js"></script>
+
+  <style>
+    .node rect {
+      stroke: #333;
+      fill: #fff;
+    }
+
+    .edgePath path {
+      stroke: #333;
+      fill: #333;
+      stroke-width: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    const data = {
+      nodes: [
+        { id: 1, name: 'jinx' },
+        { id: 2, name: 'yasu' },
+        { id: 3, name: 'dema' },
+      ],
+      edges: [
+        { from: 1, to: 2, label: 'hit' },
+        { from: 2, to: 3, label: 'hit2' },
+      ]
+    };
+
+    const g = new dagreD3.graphlib.Graph().setGraph({
+      rankdir: 'LR',
+      transition: function (selection) {
+        return selection.transition().duration(500);
+      }
+    });
+    data.nodes.forEach(node => { g.setNode(node.id, { label: node.name }); });
+    data.edges.forEach(edge => { g.setEdge(edge.from, edge.to, { label: edge.label }) });
+
+    const width = 600;
+    const height = 600;
+    const svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    const render = new dagreD3.render();
+
+    const inner = svg.append('g');
+    render(inner, g);
+
+    const zoom = d3.zoom().on("zoom", function () {
+      inner.attr("transform", d3.event.transform);
+    });
+    svg.call(zoom);
+
+    // Center the graph
+    svg.call(
+      zoom.transform,
+      d3.zoomIdentity.translate(
+        (svg.attr("width") - g.graph().width) / 2,
+        (svg.attr("height") - g.graph().height) / 2,
+      ));
+
+    const dragNodeHandler = d3.drag().on('drag', function (d) {
+      const node = d3.select(this);
+
+      const selectedNode = g.node(d);
+      const prevX = selectedNode.x;
+      const prevY = selectedNode.y;
+
+      // 移动节点
+      selectedNode.x += d3.event.dx;
+      selectedNode.y += d3.event.dy;
+      node.attr('transform', `translate(${selectedNode.x}, ${selectedNode.y})`);
+
+      // 移动线段
+      const { dx, dy } = d3.event;
+      g.edges().forEach((edge) => {
+        if (edge.v == d || edge.w === d) {
+          var e = g.edge(edge.v, edge.w);
+          // 所有的点加上偏移距离
+          e.points.forEach((p) => {
+            p.x += dx;
+            p.y += dy;
+          });
+          const edgeLabels = d3.selectAll('.edgeLabel');
+          edgeLabels.each(function (d, i) {
+            const dthis = d3.select(this);
+            if (dthis.select('tspan').text() === e.label) {
+              const transform = d3.select(this).attr('transform');
+              const translate = transform.substring(transform.indexOf("(") + 1, transform.indexOf(")")).split(",");
+              d3.select(this).attr('transform', `translate(${(+translate[0] + dx)},${(+translate[1] + dy)})`);
+            }
+          });
+          d3.select(e.elem).select('path').attr('d', calcPoints(edge));
+        }
+      })
+    });
+
+    const dragEdgePathHandler = d3.drag().on('drag', function (d) {
+      g.edge(d.v, d.w).points.forEach(p => {
+        p.x += d3.event.dx;
+        p.y += d3.event.dy;
+      });
+      const edgeObj = g.edge(d.v, d.w);
+      d3.select(edgeObj.elem).select('path').attr('d', calcPoints(d));
+    })
+
+    function calcPoints(e) {
+      const edge = g.edge(e.v, e.w);
+      const tail = g.node(e.v);
+      const head = g.node(e.w);
+      const points = edge.points.slice(1, edge.points.length - 1);
+
+      // 计算起点位置, tail 节点没有变的话, 控制点也不会改变
+      points.unshift(intersectRect(tail, points[0]));
+
+      // 计算终点位置, head 节点没有变的话, 控制点也不会改变
+      points.push(intersectRect(head, points[points.length - 1]));
+
+      return d3.line()
+        .x((d) => d.x)
+        .y((d) => d.y)
+        .curve(d3.curveBasis)(points);
+    }
+
+    // point 是当前控制点
+    function intersectRect(node, point) {
+      // x,y 是元素中心点
+      const { x, y } = node;
+
+      // 控制点与元素中心之间的距离
+      const dx = point.x - x;
+      const dy = point.y - y;
+
+      let w = 30.5;
+      let h = 22;
+      let sx = 0;
+      let sy = 0;
+
+      if (Math.abs(dy) * w > Math.abs(dx) * h) {
+        // Intersection is top or bottom of rect.
+        if (dy < 0) {
+          h = -h;
+        }
+        sx = dy == 0 ? 0 : (h * dx) / dy;
+        sy = h;
+      } else {
+        // Intersection is left or right of rect.
+        if (dx < 0) {
+          w = -w;
+        }
+        sx = w;
+        sy = dx === 0 ? 0 : (w * dy) / dx;
+      }
+
+      return {
+        x: x + sx,
+        y: y + sy,
+      }
+    }
+
+    dragNodeHandler(svg.selectAll('g.node'));
+    dragEdgePathHandler(svg.selectAll('g.edgePath'));
+
+  </script>
+</body>
+
+</html>
