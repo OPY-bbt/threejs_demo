@@ -7,6 +7,7 @@
   <title>Document</title>
   <script src="https://d3js.org/d3.v5.js"></script>
   <script src="https://dagrejs.github.io/project/dagre-d3/latest/dagre-d3.js"></script>
+  <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
 
   <style>
     .node rect {
@@ -19,10 +20,20 @@
       fill: #333;
       stroke-width: 3px;
     }
+
+    .linking-line {
+      stroke: #333;
+      stroke-width: 3px;
+    }
   </style>
 </head>
 
 <body>
+  <div>
+    <button id="add">Add jiel</button>
+    <button id="layout">Layout</button>
+  </div>
+
   <script>
     const data = {
       nodes: [
@@ -33,17 +44,40 @@
       edges: [
         { from: 1, to: 2, label: 'hit' },
         { from: 2, to: 3, label: 'hit2' },
+        // { from: 1, to: 3, label: 'hit3' },
+        // { from: 3, to: 1, label: 'hit4' },
       ]
     };
 
+    const newNode = {
+      id: 4, name: 'jiel',
+    }
+
+    const newEdge = {
+      from: 1, to: 4, label: 'hit3'
+    }
     const g = new dagreD3.graphlib.Graph().setGraph({
       rankdir: 'LR',
       transition: function (selection) {
         return selection.transition().duration(500);
       }
     });
-    data.nodes.forEach(node => { g.setNode(node.id, { label: node.name }); });
-    data.edges.forEach(edge => { g.setEdge(edge.from, edge.to, { label: edge.label }) });
+
+    function setNode(node) {
+      // svg 创建元素必须使用 SVG namespace
+      const svg_label = d3.create('svg:g');
+      svg_label.append('text').append('tspan').attr('dy', '1em').attr('x', '1').text(node.name);
+      // svg_label.append('circle').attr('dx', -12).attr('dy', 0).attr('r', 5).attr('fill', '#76cdd3');
+      // svg_label.append('circle').attr('cx', 40).attr('cy', 0).attr('r', 5).attr('fill', '#76cdd3');
+
+      g.setNode(node.id, {
+        label: svg_label.node(),
+        labelType: 'svg',
+      });
+    }
+
+    data.nodes.forEach(node => { setNode(node); });
+    data.edges.forEach(edge => { g.setEdge(edge.from, edge.to, { label: edge.label, curve: d3.curveBasis }) });
 
     const width = 600;
     const height = 600;
@@ -55,6 +89,81 @@
 
     const inner = svg.append('g');
     render(inner, g);
+
+    document.body.querySelector('#add').addEventListener('click', function () {
+      // 每次render就会重新布局
+      setNode(newNode);
+      render(inner, g);
+      dragNodeHandler(svg.selectAll('g.node'));
+      dragEdgePathHandler(svg.selectAll('g.edgePath'));
+    });
+
+    document.body.querySelector('#layout').addEventListener('click', function () {
+      render(inner, g);
+    });
+
+    const menu = contextMenu().items('连线上游', '连线下游');
+    let startX = 0;
+    let startY = 0;
+    let startNodeId = null;
+    let lineType = null;
+    let linePath = null;
+    svg.on('contextmenu', function () {
+      const e = d3.event;
+      const $nodes = document.querySelector('.nodes')
+      if ($nodes.contains(e.target)) {
+        // (废弃) 新建一个div，使用 leader-line 制作牵引线。
+        d3.event.preventDefault();
+
+        const targetNode = [...$nodes.querySelectorAll('.node')].find(v => v.contains(e.target));
+        startNodeId = d3.select(targetNode).data()[0];
+
+        const box = targetNode.getBoundingClientRect();
+
+        startX = box.x + box.width + 5 - 7;
+        startY = box.y + box.height / 2 - 30;
+
+        menu(d3.mouse(this)[0], d3.mouse(this)[1], function (menuType) {
+          console.log('select: ', menuType);
+          lineType = menuType;
+
+          linePath = svg.append('path')
+            .attr('class', 'linking-line')
+            .attr('fill', 'none')
+            .attr('d', calcD({ x: startX, y: startY }, { x: startX, y: startY }));
+        });
+      }
+    });
+
+    svg.on('mousemove', function () {
+      if (linePath) {
+        linePath.attr('d', calcD({ x: startX, y: startY }, { x: d3.mouse(this)[0], y: d3.mouse(this)[1] }))
+      }
+    });
+
+    svg.on('click', function () {
+      console.log('svg click');
+      if (!startNodeId) {
+        return;
+      }
+
+      const e = d3.event;
+      const $nodes = document.querySelector('.nodes');
+      if ($nodes.contains(e.target)) {
+        const targetNode = [...$nodes.querySelectorAll('.node')].find(v => v.contains(e.target));
+        const endNodeId = d3.select(targetNode).data()[0];
+
+        const from = lineType === '连线上游' ? endNodeId : startNodeId;
+        const to = lineType === '连线上游' ? startNodeId : endNodeId;
+        g.setEdge(from, to, { label: 'hit3' + Math.random().toFixed(2), curve: d3.curveBasis });
+      }
+
+      lineType = null;
+      startNodeId = null;
+      linePath && linePath.remove();
+      linePath = null;
+      render(inner, g);
+    })
 
     const zoom = d3.zoom().on("zoom", function () {
       inner.attr("transform", d3.event.transform);
@@ -170,6 +279,134 @@
 
     dragNodeHandler(svg.selectAll('g.node'));
     dragEdgePathHandler(svg.selectAll('g.edgePath'));
+
+    function contextMenu() {
+      var height,
+        width,
+        margin = 0.1, // fraction of width
+        items = [],
+        rescale = false,
+        style = {
+          'rect': {
+            'mouseout': {
+              'fill': 'rgb(244,244,244)',
+              'stroke': 'white',
+              'stroke-width': '1px'
+            },
+            'mouseover': {
+              'fill': 'rgb(200,200,200)'
+            }
+          },
+          'text': {
+            'fill': 'steelblue',
+            'font-size': '13'
+          }
+        };
+
+      function menu(x, y, fn) {
+        d3.select('.context-menu').remove();
+        scaleItems();
+
+        // Draw the menu
+        d3.select('svg')
+          .append('g').attr('class', 'context-menu')
+          .selectAll('tmp')
+          .data(items).enter()
+          .append('g').attr('class', 'menu-entry')
+          .styles({ 'cursor': 'pointer' })
+          .on('mouseover', function () {
+            d3.select(this).select('rect').styles(style.rect.mouseover)
+          })
+          .on('click', function (d) {
+            d3.event.stopPropagation();
+            fn(d);
+            d3.select('.context-menu').remove();
+          })
+          .on('mouseout', function () {
+            d3.select(this).select('rect').styles(style.rect.mouseout)
+          });
+
+        d3.selectAll('.menu-entry')
+          .append('rect')
+          .attr('x', x)
+          .attr('y', function (d, i) { return y + (i * height); })
+          .attr('width', width)
+          .attr('height', height)
+          .styles(style.rect.mouseout);
+
+        d3.selectAll('.menu-entry')
+          .append('text')
+          .text(function (d) { return d; })
+          .attr('x', x)
+          .attr('y', function (d, i) { return y + (i * height); })
+          .attr('dy', height - margin / 2)
+          .attr('dx', margin)
+          .styles(style.text);
+
+        // Other interactions
+        d3.select('body')
+          .on('click', function () {
+            console.log('remove');
+            d3.select('.context-menu').remove();
+          }, false);
+      }
+
+      menu.items = function (e) {
+        if (!arguments.length) return items;
+        for (i in arguments) items.push(arguments[i]);
+        rescale = true;
+        return menu;
+      }
+
+      // Automatically set width, height, and margin;
+      function scaleItems() {
+        if (rescale) {
+          var x = d3.select('svg')
+            .selectAll('tmp')
+            .data(items)
+            .enter()
+            .append('text')
+            .text(function (d) { return d; })
+            .styles(style.text)
+            .attr('x', -1000)
+            .attr('y', -1000)
+            .attr('class', 'tmp');
+          var z = d3.selectAll('.tmp').nodes()
+            .map(function (x) { return x.getBBox(); });
+          width = d3.max(z.map(function (x) { return x.width; }));
+          margin = margin * width;
+          width = width + 2 * margin;
+          height = d3.max(z.map(function (x) { return x.height + margin / 2; }));
+
+          // cleanup
+          d3.selectAll('.tmp').remove();
+          rescale = false;
+        }
+      }
+
+      return menu;
+    }
+
+    function calcD(start, end) {
+
+      // end point
+      function calcPoints(x, y) {
+        const dx = x - start.x;
+        const dy = y - start.y;
+
+        return [
+          { x: start.x, y: start.y },
+          { x: start.x + dx / 2, y: start.y },
+          { x: start.x + dx / 2, y },
+          { x, y },
+        ];
+      }
+
+      return d3.line()
+        .x((d) => d.x)
+        .y((d) => d.y)
+        .curve(d3.curveBasis)(calcPoints(end.x, end.y));
+    }
 
   </script>
 </body>

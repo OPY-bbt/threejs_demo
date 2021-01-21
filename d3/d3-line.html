@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://d3js.org/d3.v5.js"></script>
+  <style>
+    path {
+      stroke: #333;
+      stroke-width: 3px;
+    }
+
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    const width = 600;
+    const height = 600;
+
+    const start = { x: 100, y: 100 };
+
+
+
+    function calcD(x, y) {
+
+      // end point
+      function calcPoints(x, y) {
+        const dx = x - start.x;
+        const dy = y - start.y;
+
+        return [
+          { x: start.x, y: start.y },
+          { x: start.x + dx / 2, y: start.y },
+          { x: start.x + dx / 2, y },
+          { x, y },
+        ];
+      }
+
+      return d3.line()
+        .x((d) => d.x)
+        .y((d) => d.y)
+        .curve(d3.curveBasis)(calcPoints(x, y));
+    }
+
+    const svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .append('path')
+      .attr('fill', 'none')
+      .attr('d', calcD(600, 600));
+
+    document.body.addEventListener('mousemove', function (e) {
+      d3.select('path').attr('d', calcD(e.clientX, e.clientY));
+    });
+  </script>
+</body>
+
+</html>
