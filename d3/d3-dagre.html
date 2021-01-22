@@ -21,9 +21,14 @@
       stroke-width: 3px;
     }
 
+    .edgePath path:hover {
+      stroke: goldenrod;
+    }
+
     .linking-line {
       stroke: #333;
       stroke-width: 3px;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -102,7 +107,9 @@
       render(inner, g);
     });
 
-    const menu = contextMenu().items('连线上游', '连线下游');
+    const menu = contextMenu().items('连线上游', '连线下游', '删除');
+    const menuLine = contextMenu().items('删除');
+
     let startX = 0;
     let startY = 0;
     let startNodeId = null;
@@ -110,28 +117,50 @@
     let linePath = null;
     svg.on('contextmenu', function () {
       const e = d3.event;
-      const $nodes = document.querySelector('.nodes')
+      const $nodes = document.querySelector('.nodes');
       if ($nodes.contains(e.target)) {
         // (废弃) 新建一个div，使用 leader-line 制作牵引线。
         d3.event.preventDefault();
 
-        const targetNode = [...$nodes.querySelectorAll('.node')].find(v => v.contains(e.target));
-        startNodeId = d3.select(targetNode).data()[0];
-
-        const box = targetNode.getBoundingClientRect();
-
-        startX = box.x + box.width + 5 - 7;
-        startY = box.y + box.height / 2 - 30;
-
         menu(d3.mouse(this)[0], d3.mouse(this)[1], function (menuType) {
-          console.log('select: ', menuType);
-          lineType = menuType;
+          if (menuType === '删除') {
+            const targetNode = [...$nodes.querySelectorAll('.node')].find(v => v.contains(e.target));
+            const nodeId = d3.select(targetNode).data()[0];
 
-          linePath = svg.append('path')
-            .attr('class', 'linking-line')
-            .attr('fill', 'none')
-            .attr('d', calcD({ x: startX, y: startY }, { x: startX, y: startY }));
+            g.removeNode(nodeId);
+            render(inner, g);
+          } else {
+            const targetNode = [...$nodes.querySelectorAll('.node')].find(v => v.contains(e.target));
+            startNodeId = d3.select(targetNode).data()[0];
+
+            const box = targetNode.getBoundingClientRect();
+
+            startX = box.x + box.width + 5 - 7;
+            startY = box.y + box.height / 2 - 30;
+
+            lineType = menuType;
+
+            linePath = svg.append('path')
+              .attr('class', 'linking-line')
+              .attr('fill', 'none')
+              .attr('d', calcD({ x: startX, y: startY }, { x: startX, y: startY }));
+          }
         });
+      }
+
+      const $edges = document.querySelector('.edgePaths');
+      if ($edges.contains(e.target)) {
+        d3.event.preventDefault();
+
+        menuLine(d3.mouse(this)[0], d3.mouse(this)[1], function (menuType) {
+          if (menuType === '删除') {
+            const targetEdge = [...$edges.querySelectorAll('.edgePath')].find(v => v.contains(e.target));
+            const nodeId = d3.select(targetEdge).data()[0];
+
+            g.removeEdge(nodeId);
+            render(inner, g);
+          }
+        })
       }
     });
 
@@ -144,6 +173,7 @@
     svg.on('click', function () {
       console.log('svg click');
       if (!startNodeId) {
+        console.log('startNodeId is missing');
         return;
       }
 
@@ -162,6 +192,7 @@
       startNodeId = null;
       linePath && linePath.remove();
       linePath = null;
+
       render(inner, g);
     })
 
