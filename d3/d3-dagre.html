@@ -268,7 +268,7 @@
       const head = g.node(e.w);
       const points = edge.points.slice(1, edge.points.length - 1);
 
-      // 计算起点位置, tail 节点没有变的话, 控制点也不会改变
+      // 计算终点位置
       points.unshift(intersectRect(tail, points[0]));
 
       // 计算起点位置
